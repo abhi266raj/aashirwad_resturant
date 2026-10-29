@@ -51,13 +51,25 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
         print('Created spreadsheet: ' + sheet_url)
     sheet_id = spreadsheet_id(sheet_url)
     base = f'{API}/{quote(sheet_id, safe="")}'
-    metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
+    try:
+        metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
+    except Exception as exc:
+        print(f"Spreadsheet {sheet_id} could not be opened ({exc}). Creating new spreadsheet...")
+        created = checked(session.post(API, json={'properties': {'title': tab}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))
+        sheet_url = created['spreadsheetUrl']
+        sheet_id = spreadsheet_id(sheet_url)
+        base = f'{API}/{quote(sheet_id, safe="")}'
+        metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
+        print('Created spreadsheet: ' + sheet_url)
+
     matches = [sheet for sheet in metadata.get('sheets', []) if sheet.get('properties', {}).get('title') == tab]
     if matches:
         tab_id = matches[0]['properties']['sheetId']
     else:
+        print(f"Sheet tab {tab!r} not found in spreadsheet. Creating tab {tab!r}...")
         result = checked(session.post(f'{base}:batchUpdate', json={'requests': [{'addSheet': {'properties': {'title': tab, 'gridProperties': {'rowCount': 1000, 'columnCount': len(FIELDS)}}}}]}, timeout=30))
         tab_id = result['replies'][0]['addSheet']['properties']['sheetId']
+        print(f"Created sheet tab {tab!r}.")
     header = existing_values(session, base, tab, 'A1:I1')
     if header and any(str(cell).strip() for cell in header[0]) and header[0] != FIELDS:
         raise ValueError('existing header differs from the menu schema; no cells were overwritten')
@@ -91,7 +103,7 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
             set_values(session, base, tab, f'A2:I{len(values) + 1}', values)
     config['sheet'].update(url=sheet_url, name=tab)
     save_config(config)
-    print(f'Menu schema ready: {len(FIELDS)} columns, Veg/Non-Veg and Yes/No dropdowns')
+    print(f'Menu schema ready on {sheet_url} (tab: {tab}): {len(FIELDS)} columns, Veg/Non-Veg and Yes/No dropdowns')
 
 
 def main():
