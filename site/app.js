@@ -12,9 +12,15 @@ let MENU_ITEMS = [];
 let MENU_CATEGORIES = [];
 const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 async function loadMenuData() {
-  const response = await fetch('menu.json', {cache:'no-store'});
-  if (!response.ok) throw new Error('Menu unavailable');
-  const data = await response.json();
+  let data;
+  if (window.location.protocol === 'file:') {
+    data = window.MENU_SNAPSHOT;
+  } else {
+    const response = await fetch('menu.json', {cache:'no-store'});
+    if (!response.ok) throw new Error('Menu unavailable');
+    data = await response.json();
+  }
+  if (!data || !Array.isArray(data.items)) throw new Error('Menu unavailable');
   MENU_ITEMS = data.items.map(item => ({...item, isVeg:item.diet === 'veg', bestseller:item.popular}));
   MENU_CATEGORIES = [{id:'all', name:'All Dishes', icon:'🍽️'}, ...Array.from(new Set(MENU_ITEMS.map(item => item.category))).map(category => ({id:category, name:category, icon:''}))];
 }
@@ -84,7 +90,7 @@ function loadSavedData() {
   state.delivery.address = getCookie('aashirwad_resturant_addr') || '';
   state.delivery.name = getCookie('aashirwad_resturant_name') || '';
   state.delivery.phone = getCookie('aashirwad_resturant_phone') || '';
-  state.delivery.notes = localStorage.getItem('aashirwad_resturant_notes') || '';
+  try { state.delivery.notes = localStorage.getItem('aashirwad_resturant_notes') || ''; } catch { state.delivery.notes = ''; }
 
   try {
     const savedCart = localStorage.getItem('aashirwad_resturant_cart');

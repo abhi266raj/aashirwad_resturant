@@ -237,6 +237,8 @@ def main():
     payload = localize_images(normalize(rows), MENU_IMAGE_MAX_WIDTH, MENU_IMAGE_MAX_HEIGHT, MENU_IMAGE_QUALITY)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
+    snapshot = args.output.with_name('menu-snapshot.js')
+    snapshot.write_text('window.MENU_SNAPSHOT = ' + json.dumps(payload, ensure_ascii=True).replace('<', '\\u003c') + ';\n', encoding='utf-8')
     print(f'Validated {len(payload["items"])} dishes and wrote {args.output}')
 
 
