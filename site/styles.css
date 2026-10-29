@@ -3,9 +3,9 @@
    ========================================================================== */
 
 :root {
-  --primary: #c2410c; /* Deep warm Indian saffron / amber red */
-  --primary-hover: #9a3412;
-  --primary-light: #ffedd5;
+  --primary: #047857; /* Deep warm Indian saffron / amber red */
+  --primary-hover: #065f46;
+  --primary-light: #d1fae5;
   --accent: #d97706;
   --accent-gold: #f59e0b;
   --bg-cream: #fffdfa;
@@ -119,7 +119,7 @@ h1, h2, h3, h4, .font-heading {
 .category-tab.active {
   background-color: var(--primary);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(194, 65, 12, 0.3);
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.3);
 }
 
 /* Item Card Hover */
@@ -170,7 +170,7 @@ h1, h2, h3, h4, .font-heading {
   bottom: 24px;
   right: 24px;
   z-index: 40;
-  box-shadow: 0 10px 25px -3px rgba(194, 65, 12, 0.5), 0 4px 10px -2px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 25px -3px rgba(4, 120, 87, 0.5), 0 4px 10px -2px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
   animation: pulse-glow 2.5s infinite;
 }
@@ -180,10 +180,10 @@ h1, h2, h3, h4, .font-heading {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 10px 25px -3px rgba(194, 65, 12, 0.45);
+    box-shadow: 0 10px 25px -3px rgba(4, 120, 87, 0.45);
   }
   50% {
-    box-shadow: 0 14px 30px -2px rgba(194, 65, 12, 0.7);
+    box-shadow: 0 14px 30px -2px rgba(4, 120, 87, 0.7);
   }
 }
 
@@ -251,10 +251,10 @@ h1, h2, h3, h4, .font-heading {
 }
 
 /* App theme: preserve the original page structure and controls. */
-:root { --primary:#7b2e22; --primary-hover:#542017; --primary-light:#f8e3da; --bg-cream:#f8f3eb; }
-body { background:#f8f3eb; }
-header { box-shadow:0 3px 18px #5420170a; }
-.menu-card { border-color:#e9dfd2; box-shadow:0 3px 14px #54201708; }
+:root { --primary:#047857; --primary-hover:#064e3b; --primary-light:#d1fae5; --bg-cream:#f5f8f7; }
+body { background:#f5f8f7; }
+header { box-shadow:0 3px 18px #064e3b0a; }
+.menu-card { border-color:#dce8e2; box-shadow:0 3px 14px #064e3b08; }
 .menu-card:hover { transform:translateY(-2px); }
 .category-tab { letter-spacing:.01em; }
-.floating-cart-btn { animation:none; box-shadow:0 8px 24px #54201740; }
+.floating-cart-btn { animation:none; box-shadow:0 8px 24px #064e3b40; }
