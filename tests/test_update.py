@@ -157,7 +157,7 @@ class MenuSyncTests(unittest.TestCase):
              unittest.mock.patch.object(update, 'find_local_credentials_path', return_value=None), \
              unittest.mock.patch('google.auth.default', side_effect=Exception('no ADC')):
             with self.assertRaisesRegex(RuntimeError, 'Local authentication not configured'):
-                update.authorized_session(['https://www.googleapis.com/auth/spreadsheets.readonly'])
+                update.authorized_session(['https://www.googleapis.com/auth/spreadsheets.readonly'], interactive=False)
 
     def test_download_sheet_csv_fails_explicitly_on_error(self):
         with tempfile.TemporaryDirectory() as temp_dir_str:

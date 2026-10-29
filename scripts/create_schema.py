@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from urllib.parse import quote
 
-from update import FIELDS, authorized_session, spreadsheet_id, default_sheet_url, load_config, save_config
+from update import FIELDS, authorized_session, spreadsheet_id, default_sheet_url, load_config, save_config, login_with_browser
 
 ROOT = Path(__file__).resolve().parents[1]
 API = 'https://sheets.googleapis.com/v4/spreadsheets'
@@ -55,16 +55,30 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
         metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
     except Exception as exc:
         status_code = getattr(getattr(exc, 'response', None), 'status_code', None)
-        if status_code == 404:
-            print(f"Spreadsheet {sheet_id} was not found (404). Creating new spreadsheet...")
-            created = checked(session.post(API, json={'properties': {'title': tab}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))
-            sheet_url = created['spreadsheetUrl']
-            sheet_id = spreadsheet_id(sheet_url)
-            base = f'{API}/{quote(sheet_id, safe="")}'
-            metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
-            print('Created spreadsheet: ' + sheet_url)
-        else:
-            raise
+        if status_code == 403 and sys.stdin.isatty():
+            print("\nYour current Google account authorization lacks Google Sheets permissions.")
+            try:
+                choice = input("Open browser to sign in and grant Sheets permission? [Y/n]: ").strip().lower()
+                if choice in ('', 'y', 'yes'):
+                    new_creds = login_with_browser(['https://www.googleapis.com/auth/spreadsheets'])
+                    if new_creds:
+                        from google.auth.transport.requests import AuthorizedSession
+                        session = AuthorizedSession(new_creds)
+                        metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
+                        exc = None
+            except (KeyboardInterrupt, EOFError):
+                pass
+        if exc is not None:
+            if status_code == 404:
+                print(f"Spreadsheet {sheet_id} was not found (404). Creating new spreadsheet...")
+                created = checked(session.post(API, json={'properties': {'title': tab}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))
+                sheet_url = created['spreadsheetUrl']
+                sheet_id = spreadsheet_id(sheet_url)
+                base = f'{API}/{quote(sheet_id, safe="")}'
+                metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
+                print('Created spreadsheet: ' + sheet_url)
+            else:
+                raise
 
     matches = [sheet for sheet in metadata.get('sheets', []) if sheet.get('properties', {}).get('title') == tab]
     if matches:

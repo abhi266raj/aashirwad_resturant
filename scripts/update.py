@@ -161,8 +161,45 @@ def find_credentials(scopes):
     return None
 
 
-def authorized_session(scopes):
-    """Return an authenticated AuthorizedSession using local or environment credentials."""
+def login_with_browser(scopes):
+    """Convenient, low-friction browser sign-in."""
+    import shutil
+    import subprocess
+
+    if shutil.which('gcloud'):
+        print('\nOpening browser for Google sign-in via gcloud...')
+        try:
+            result = subprocess.run(['gcloud', 'auth', 'login', '--enable-gdrive-access', '--update-adc'])
+            if result.returncode == 0:
+                print('✓ Google authentication successful.\n')
+                return find_credentials(scopes)
+        except Exception as exc:
+            print(f'gcloud browser login failed: {exc}')
+
+    client_file = AUTH_DIR / 'client.json'
+    if not client_file.is_file():
+        client_file = AUTH_DIR / 'credentials.json'
+    if client_file.is_file():
+        try:
+            data = json.loads(client_file.read_text(encoding='utf-8'))
+            if 'installed' in data or 'web' in data:
+                from google_auth_oauthlib.flow import InstalledAppFlow
+                flow = InstalledAppFlow.from_client_config(data, scopes=scopes)
+                creds = flow.run_local_server(host='localhost', port=0, open_browser=True, timeout_seconds=300)
+                AUTH_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
+                token_file = AUTH_DIR / 'token.json'
+                token_file.write_text(creds.to_json(), encoding='utf-8')
+                token_file.chmod(0o600)
+                print('✓ OAuth browser login successful.\n')
+                return creds
+        except Exception as exc:
+            print(f'OAuth browser login failed: {exc}')
+
+    return None
+
+
+def authorized_session(scopes, interactive=True):
+    """Return an authenticated AuthorizedSession using local, environment, or browser credentials."""
     try:
         from google.auth.transport.requests import AuthorizedSession, Request
         from google.auth.exceptions import RefreshError
@@ -170,6 +207,15 @@ def authorized_session(scopes):
         raise RuntimeError('install requirements.txt before accessing Google Sheets') from exc
 
     creds = find_credentials(scopes)
+    if not creds and interactive and sys.stdin.isatty():
+        print('\nGoogle Sheets authorization is required.')
+        try:
+            choice = input('Open browser to sign in with your Google account? [Y/n]: ').strip().lower()
+            if choice in ('', 'y', 'yes'):
+                creds = login_with_browser(scopes)
+        except (KeyboardInterrupt, EOFError):
+            print('\nSign-in cancelled.')
+
     if not creds:
         if os.environ.get('GITHUB_ACTIONS') == 'true' or os.environ.get('CI', '').lower() in ('true', '1'):
             raise RuntimeError('GitHub/CI requires GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_OAUTH_TOKEN_JSON')
