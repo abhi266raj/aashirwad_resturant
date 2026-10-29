@@ -35,7 +35,7 @@ For GitHub, share this sheet with a dedicated service account as **Viewer**, the
 
 ## Editing the menu
 
-Each row is a dish. Add rows freely and choose a category from the dropdown. To add categories, edit `categories` in `scripts/config.json` and rerun the local setup script. Columns are `id`, `name`, `category`, `price`, `diet`, `description`, `popular`, `image`, `sort_priority`.
+Each row is a dish. Add rows freely and choose or enter a category in the sheet. Categories are dynamically fetched directly from the sheet during update and schema configuration, automatically updating website category tabs and dropdowns. Columns are `id`, `name`, `category`, `price`, `diet`, `description`, `popular`, `image`, `sort_priority`.
 
 Google Sheets enforces unique positive numeric IDs, positive whole rupee prices, Veg/Non-Veg choices, Yes/No choices, optional HTTPS image links and non-negative whole sort prioritys when the setup script applies the schema. Existing IDs are stored values and move with their dishes. Enter a new permanent ID as one greater than the highest current ID. Native formulas cannot safely assign permanent IDs automatically. Python reads ID values without checking or changing them.
 

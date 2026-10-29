@@ -345,6 +345,16 @@ class MenuSyncTests(unittest.TestCase):
             data = json.loads(json_file.read_text(encoding='utf-8'))
             self.assertEqual(data['name'], 'Spice Garden')
 
+    def test_extract_categories_dynamic_from_rows(self):
+        rows = [
+            {'category': 'Beverages', 'name': 'Tea'},
+            {'category': 'Snacks', 'name': 'Samosa'},
+            {'category': 'Beverages', 'name': 'Coffee'},
+            {'category': 'Desserts', 'name': 'Gulab Jamun'},
+        ]
+        cats = update.extract_categories(rows)
+        self.assertEqual(cats, ['Beverages', 'Snacks', 'Desserts'])
+
 
 if __name__ == '__main__':
     unittest.main()

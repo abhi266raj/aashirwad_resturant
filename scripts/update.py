@@ -465,6 +465,18 @@ def fallback_image(name, diet, local_image):
     return 'assets/placeholder.svg'
 
 
+def extract_categories(rows):
+    """Dynamically extract unique category names from sheet rows, preserving appearance order."""
+    seen = set()
+    categories = []
+    for row in rows:
+        cat = str(row.get('category') or '').strip()
+        if cat and cat not in seen:
+            seen.add(cat)
+            categories.append(cat)
+    return categories
+
+
 def normalize(rows):
     items = []
     priorities = [int(cell_text(row.get('sort_priority'))) for row in rows if re.fullmatch(r'[0-9]+', cell_text(row.get('sort_priority')))]
@@ -506,7 +518,8 @@ def normalize(rows):
     if not items:
         raise ValueError('menu has no dishes')
     items.sort(key=lambda item: item['sort_priority'])
-    return {'version': 1, 'items': items}
+    categories = extract_categories(rows)
+    return {'version': 1, 'categories': categories, 'items': items}
 
 
 def download_image(url, target, max_width=900, max_height=900, quality=78):
@@ -779,6 +792,12 @@ def main():
 
         rows = read_csv_rows(csv_path)
         payload = localize_images(normalize(rows), MENU_IMAGE_MAX_WIDTH, MENU_IMAGE_MAX_HEIGHT, MENU_IMAGE_QUALITY)
+        sheet_categories = payload.get('categories', [])
+        if sheet_categories and sheet_categories != config.get('categories'):
+            config['categories'] = sheet_categories
+            save_config(config)
+            print(f"Dynamically updated categories in config.json: {', '.join(sheet_categories)}")
+
         write_menu_files(payload, args.output)
         write_restaurant_files(config, SITE)
         print(f'Validated {len(payload["items"])} dishes and wrote {args.output}')

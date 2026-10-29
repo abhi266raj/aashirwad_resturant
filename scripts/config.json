@@ -5,9 +5,18 @@
     "whatsapp_number": "7004230188",
     "whatsapp_display": "+91 70042 30188",
     "other_contact_numbers": [
-      { "number": "9334047955", "display": "+91 93340 47955" },
-      { "number": "6207228264", "display": "+91 62072 28264" },
-      { "number": "9931579212", "display": "+91 99315 79212" }
+      {
+        "number": "9334047955",
+        "display": "+91 93340 47955"
+      },
+      {
+        "number": "6207228264",
+        "display": "+91 62072 28264"
+      },
+      {
+        "number": "9931579212",
+        "display": "+91 99315 79212"
+      }
     ],
     "location": {
       "city": "Hazaribagh",
@@ -22,13 +31,6 @@
     "name": "Menu2"
   },
   "categories": [
-    "Roti & Naan",
-    "Veg Main Course",
-    "Non-Veg Main Course",
-    "Momos",
-    "Biryani & Rice",
-    "Chowmein & Fast Food",
-    "Starters & Chilli",
-    "Drinks & Desserts"
+    "Roti & Naan"
   ]
 }

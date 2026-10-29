@@ -1,1 +1,1 @@
-{"version":1,"items":[{"id":"","name":"roti","category":"Roti & Naan","price":100,"diet":"veg","description":"Normal roti","popular":true,"fallback_image":"assets/placeholder.svg","sort_priority":0,"image":"assets/sheet/498379f0acf3d7eb19d18d72.jpg"}]}
+{"version":1,"categories":["Roti & Naan"],"items":[{"id":"","name":"roti","category":"Roti & Naan","price":100,"diet":"veg","description":"Normal roti","popular":true,"fallback_image":"assets/placeholder.svg","sort_priority":0,"image":"assets/sheet/498379f0acf3d7eb19d18d72.jpg"}]}

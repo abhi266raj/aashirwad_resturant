@@ -15,7 +15,21 @@ async function loadMenuData() {
   const data = window.MENU_SNAPSHOT;
   if (!data || !Array.isArray(data.items)) throw new Error('Menu unavailable');
   MENU_ITEMS = data.items.map(item => ({...item, isVeg:item.diet === 'veg', bestseller:item.popular}));
-  MENU_CATEGORIES = [{id:'all', name:'All Dishes', icon:'🍽️'}, ...Array.from(new Set(MENU_ITEMS.map(item => item.category))).map(category => ({id:category, name:category, icon:''}))];
+
+  // Categories dynamically fetched from sheet
+  const dynamicCats = Array.isArray(data.categories) && data.categories.length > 0
+    ? data.categories
+    : Array.from(new Set(MENU_ITEMS.map(item => item.category).filter(Boolean)));
+
+  const allCats = Array.from(new Set([
+    ...dynamicCats,
+    ...MENU_ITEMS.map(item => item.category).filter(Boolean)
+  ]));
+
+  MENU_CATEGORIES = [
+    {id:'all', name:'All Dishes', icon:'🍽️'},
+    ...allCats.map(category => ({id:category, name:category, icon:''}))
+  ];
 }
 // Application State
 const state = {

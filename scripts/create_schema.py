@@ -81,6 +81,7 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
                 raise
 
     matches = [sheet for sheet in metadata.get('sheets', []) if sheet.get('properties', {}).get('title') == tab]
+    tab_already_existed = bool(matches)
     if matches:
         tab_id = matches[0]['properties']['sheetId']
     else:
@@ -97,7 +98,29 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
         {'updateSheetProperties': {'properties': {'sheetId': tab_id, 'gridProperties': {'frozenRowCount': 1}}, 'fields': 'gridProperties.frozenRowCount'}},
         {'repeatCell': {'range': {'sheetId': tab_id, 'startRowIndex': 0, 'endRowIndex': 1}, 'cell': {'userEnteredFormat': {'backgroundColor': {'red': 0.02, 'green': 0.31, 'blue': 0.23}, 'textFormat': {'foregroundColor': {'red': 1, 'green': 1, 'blue': 1}, 'bold': True}}}, 'fields': 'userEnteredFormat'}},
     ]
-    for column, values in ((2, load_config()['categories']), (4, ['Veg', 'Non-Veg']), (6, ['Yes', 'No'])):
+
+    # Dynamically fetch any existing categories from Column C if tab already existed
+    sheet_categories = []
+    if tab_already_existed:
+        try:
+            col_c_values = existing_values(session, base, tab, 'C2:C')
+            for r in col_c_values:
+                if r and str(r[0]).strip():
+                    c = str(r[0]).strip()
+                    if c not in sheet_categories and c != FIELDS[2]:
+                        sheet_categories.append(c)
+        except Exception:
+            pass
+
+    configured_cats = config.get('categories') or []
+    categories = sheet_categories + [c for c in configured_cats if c not in sheet_categories]
+    if not categories:
+        categories = [
+            "Roti & Naan", "Veg Main Course", "Non-Veg Main Course", "Momos",
+            "Biryani & Rice", "Chowmein & Fast Food", "Starters & Chilli", "Drinks & Desserts"
+        ]
+
+    for column, values in ((2, categories), (4, ['Veg', 'Non-Veg']), (6, ['Yes', 'No'])):
         requests.append({'setDataValidation': {'range': {'sheetId': tab_id, 'startRowIndex': 1, 'startColumnIndex': column, 'endColumnIndex': column + 1}, 'rule': {'condition': {'type': 'ONE_OF_LIST', 'values': [{'userEnteredValue': value} for value in values]}, 'strict': True, 'showCustomUi': True}}})
     formulas = {
         0: '=OR(A2="",AND(ISNUMBER(A2),A2>0,A2=INT(A2),COUNTIF(A$2:A,A2)=1))',
@@ -120,6 +143,7 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
         if values:
             set_values(session, base, tab, f'A2:I{len(values) + 1}', values)
     config['sheet'].update(url=sheet_url, name=tab)
+    config['categories'] = categories
     save_config(config)
     print(f'Menu schema ready on {sheet_url} (tab: {tab}): {len(FIELDS)} columns, Veg/Non-Veg and Yes/No dropdowns')
 
