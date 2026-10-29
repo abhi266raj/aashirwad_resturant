@@ -2,3 +2,11 @@
 __pycache__/
 *.pyc
 .venv/
+.google-auth/
+client_secret*.json
+credentials.json
+service_account*.json
+token*.json
+temp/
+*.tmp
+

@@ -9,13 +9,23 @@ Both Python scripts read `scripts/config.json`. Its `sheet.url` is the private s
 ## Scripts
 
 - `python3 scripts/create_schema.py`: run locally with Google edit access to configure the sheet's columns, strict dropdowns, validation, and formatting. It preserves existing dishes and IDs. Use `--seed` only for an empty menu. Use `--new --sheet-name "Menu2"` to create a spreadsheet; successful creation saves its URL in the shared configuration.
-- `python3 scripts/update.py`: reads the private sheet with read-only access, downloads supplied image URLs, resizes and compresses them, and updates the static files in `site/`. It never assigns or validates dish IDs.
+- `python3 scripts/update.py`: downloads sheet data as a temporary CSV into `temp/`, validates and normalizes rows, downloads/resizes image URLs, updates static files in `site/`, and automatically cleans up temporary CSV files when complete. It never assigns or validates dish IDs.
 
 Both accept `--sheet-url` and `--tab` overrides. `--csv data/menu-template.csv` lets the updater use the included starter data without Google authentication. All Python implementation code is under `scripts/`; tests are under `tests/`.
 
 ## Authentication
 
-Run `python3 scripts/setup.py` once. Both functional scripts also invoke setup automatically if dependencies are missing. Setup creates a project `.venv`, verifies its packages, and reuses it on later runs. For local setup, supply an authorized Google user credential through `GOOGLE_OAUTH_TOKEN_JSON`, or an Editor service account credential through `GOOGLE_SERVICE_ACCOUNT_JSON`. For creation in your personal Drive, use your own authorized user credential. These credentials must be provisioned once; the Google authentication library obtains and refreshes short-lived access tokens automatically.
+Run `python3 scripts/setup.py` once. Both functional scripts also invoke setup automatically if dependencies are missing. Setup creates a project `.venv`, verifies its packages, and reuses it on later runs.
+
+### Local Authentication
+
+To set up local authentication simply:
+- **Service Account (Recommended):** Place your Google service account JSON key at `.google-auth/credentials.json` (or pass it via `python3 scripts/setup.py --credentials /path/to/key.json`).
+- **User Credentials / OAuth:** Drop your OAuth token or client JSON into `.google-auth/credentials.json` or `.google-auth/token.json`.
+- **Environment variables:** Alternatively, set `GOOGLE_SERVICE_ACCOUNT_JSON` (raw JSON) or `GOOGLE_APPLICATION_CREDENTIALS` (file path).
+- **Application Default Credentials (ADC):** Standard ADC credentials from `gcloud auth application-default login` are automatically recognized when available.
+
+Run `python3 scripts/setup.py --check` at any time to verify your environment and local authentication status.
 
 For GitHub, share this sheet with a dedicated service account as **Viewer**, then store its JSON credential in the repository Actions secret `GOOGLE_SERVICE_ACCOUNT_JSON`. The sheet stays private. The updater uses only the Sheets read-only scope. No Apps Script is used.
 
@@ -44,3 +54,5 @@ Double-click the root `index.html` or `site/index.html` for local viewing. The u
 Manual cleanup: run `python3 scripts/update.py --clear-unused-assets --dry-run` to preview, then `python3 scripts/update.py --clear-unused-assets` to remove unused images. It uses the saved menu and static site references, requires no Google credentials, and preserves referenced photos, logos and placeholders. Run an update first when the sheet has changed.
 
 On macOS, double-click **Update Menu.command** at the project root. It runs the updater from the correct directory, performs setup if needed, and keeps the Terminal window open to show success or an authentication error. The Python scripts are executable and can also be run as `./scripts/update.py`. Google credentials are still required for private-sheet updates.
+
+Local credentials and tokens are saved in the gitignored `.google-auth/` directory with restricted file permissions (`0o600`). Temporary CSV downloads used during update are stored in `temp/` and automatically cleaned up upon completion. GitHub never opens a browser; it requires the configured repository credential secret.

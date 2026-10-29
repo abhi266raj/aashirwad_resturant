@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read a private Google Sheet, cache its images, and update the static site."""
+"""Read a Google Sheet via temporary CSV download, cache images, and update the static site."""
 import argparse
 import csv
 import io
@@ -8,14 +8,31 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.parse
 from urllib.parse import urlparse
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+SITE = ROOT / 'site'
+AUTH_DIR = ROOT / '.google-auth'
+TEMP_DIR = ROOT / 'temp'
 CONFIG_PATH = Path(__file__).with_name('config.json')
+
+FIELDS = ['id', 'name', 'category', 'price', 'diet', 'description', 'popular', 'image', 'sort_priority']
+TRUTHY = {'yes', 'true', '1'}
+FALSEY = {'no', 'false', '0'}
+
+# Cards reach about 400 CSS pixels at the two-column breakpoint.
+# Export at 2x density; the layout displays them in a 4:3 frame.
+MENU_IMAGE_MAX_WIDTH = 800
+MENU_IMAGE_MAX_HEIGHT = 600
+MENU_IMAGE_QUALITY = 78
+
 
 def load_config(path=CONFIG_PATH):
     return json.loads(Path(path).read_text(encoding='utf-8'))
+
 
 def save_config(config):
     CONFIG_PATH.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -42,29 +59,214 @@ def spreadsheet_id(value):
     raise ValueError('invalid Google Sheet URL or ID')
 
 
-def authorized_session(scopes):
-    try:
-        from google.oauth2 import service_account
-        from google.auth.transport.requests import AuthorizedSession
-    except ImportError as exc:
-        raise RuntimeError('install requirements.txt before accessing Google Sheets') from exc
+def find_local_credentials_path():
+    candidates = [
+        AUTH_DIR / 'credentials.json',
+        AUTH_DIR / 'service-account.json',
+        AUTH_DIR / 'service_account.json',
+        AUTH_DIR / 'token.json',
+        AUTH_DIR / 'token-readonly.json',
+        AUTH_DIR / 'token-editor.json',
+        ROOT / 'credentials.json',
+        ROOT / 'service-account.json',
+        ROOT / 'service_account.json',
+    ]
+    for path in candidates:
+        if path.is_file():
+            return path
+    return None
+
+
+def credentials_from_file(path, scopes):
+    from google.oauth2 import service_account
+    from google.oauth2.credentials import Credentials
+    data = json.loads(Path(path).read_text(encoding='utf-8'))
+    if data.get('type') == 'service_account':
+        return service_account.Credentials.from_service_account_info(data, scopes=scopes)
+    if data.get('type') == 'authorized_user' or 'refresh_token' in data:
+        return Credentials.from_authorized_user_info(data, scopes=scopes)
+    if 'installed' in data or 'web' in data:
+        token_file = AUTH_DIR / 'token.json'
+        if token_file.is_file():
+            try:
+                creds = Credentials.from_authorized_user_file(str(token_file), scopes=scopes)
+                if creds and (creds.valid or creds.refresh_token):
+                    return creds
+            except Exception:
+                pass
+        try:
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            flow = InstalledAppFlow.from_client_config(data, scopes=scopes)
+            creds = flow.run_local_server(host='localhost', port=0, open_browser=True, timeout_seconds=300)
+            AUTH_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
+            token_file.write_text(creds.to_json(), encoding='utf-8')
+            token_file.chmod(0o600)
+            return creds
+        except Exception as exc:
+            raise RuntimeError(f'OAuth client sign-in failed: {exc}') from exc
+    raise ValueError(f'Unrecognized credential format in {path}')
+
+
+def find_credentials(scopes):
     user_token = os.environ.get('GOOGLE_OAUTH_TOKEN_JSON', '').strip()
     if user_token:
         from google.oauth2.credentials import Credentials
-        return AuthorizedSession(Credentials.from_authorized_user_info(json.loads(user_token), scopes=scopes))
-    credentials_json = os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON', '').strip()
-    if not credentials_json:
-        raise RuntimeError('GOOGLE_SERVICE_ACCOUNT_JSON is required')
-    info = json.loads(credentials_json)
-    credentials = service_account.Credentials.from_service_account_info(info, scopes=scopes)
-    return AuthorizedSession(credentials)
+        return Credentials.from_authorized_user_info(json.loads(user_token), scopes=scopes)
+
+    service_account_env = os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON', '').strip()
+    if service_account_env:
+        from google.oauth2 import service_account
+        return service_account.Credentials.from_service_account_info(json.loads(service_account_env), scopes=scopes)
+
+    app_creds_env = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', '').strip()
+    if app_creds_env and Path(app_creds_env).is_file():
+        return credentials_from_file(Path(app_creds_env), scopes)
+
+    local_file = find_local_credentials_path()
+    if local_file:
+        return credentials_from_file(local_file, scopes)
+
+    try:
+        import google.auth
+        creds, _ = google.auth.default(scopes=scopes)
+        if creds:
+            return creds
+    except Exception:
+        pass
+
+    return None
 
 
-ROOT = Path(__file__).resolve().parents[1]
-SITE = ROOT / 'site'
-FIELDS = ['id','name','category','price','diet','description','popular','image','sort_priority']
-TRUTHY = {'yes', 'true', '1'}
-FALSEY = {'no', 'false', '0'}
+def authorized_session(scopes):
+    """Return an authenticated AuthorizedSession using local or environment credentials."""
+    try:
+        from google.auth.transport.requests import AuthorizedSession, Request
+        from google.auth.exceptions import RefreshError
+    except ImportError as exc:
+        raise RuntimeError('install requirements.txt before accessing Google Sheets') from exc
+
+    creds = find_credentials(scopes)
+    if not creds:
+        if os.environ.get('GITHUB_ACTIONS') == 'true' or os.environ.get('CI', '').lower() in ('true', '1'):
+            raise RuntimeError('GitHub/CI requires GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_OAUTH_TOKEN_JSON')
+        raise RuntimeError(
+            "Local authentication not configured. Run 'python3 scripts/setup.py --credentials <file.json>' "
+            "or place your credentials in .google-auth/credentials.json"
+        )
+    if hasattr(creds, 'refresh') and getattr(creds, 'expired', False) and getattr(creds, 'refresh_token', None):
+        try:
+            creds.refresh(Request())
+        except RefreshError as exc:
+            raise RuntimeError(f'Credential refresh failed: {exc}') from exc
+    return AuthorizedSession(creds)
+
+
+def clean_temp_files(file_path=None, temp_dir=TEMP_DIR):
+    """Clean up downloaded CSV and temporary directory."""
+    if file_path:
+        path = Path(file_path)
+        if path.is_file():
+            try:
+                path.unlink()
+            except OSError:
+                pass
+    temp_path = Path(temp_dir)
+    if temp_path.is_dir():
+        for temp_file in temp_path.glob('menu_*.csv'):
+            try:
+                temp_file.unlink()
+            except OSError:
+                pass
+        try:
+            if not any(temp_path.iterdir()):
+                temp_path.rmdir()
+        except OSError:
+            pass
+
+
+def download_sheet_csv(sheet_url, tab, session=None, temp_dir=TEMP_DIR):
+    """Download Google Sheet data as a CSV file in a temporary folder."""
+    import requests
+    temp_dir = Path(temp_dir)
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    slug = re.sub(r'[^a-zA-Z0-9_-]+', '_', tab).strip('_') or 'data'
+    target_path = temp_dir / f"menu_{slug}_{int(time.time() * 1000)}.csv"
+    sheet_id = spreadsheet_id(sheet_url)
+
+    export_urls = [
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&sheet={urllib.parse.quote(tab)}",
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(tab)}",
+    ]
+
+    requester = session if session is not None else requests.Session()
+    csv_written = False
+
+    for url in export_urls:
+        try:
+            resp = requester.get(url, timeout=30, allow_redirects=True)
+            if resp.status_code == 200:
+                text = resp.text
+                first_line = text.splitlines()[0] if text.splitlines() else ''
+                if any(f in first_line for f in ('id', 'name', 'category', 'price')) and '<html' not in text[:200].lower():
+                    target_path.write_text(text, encoding='utf-8')
+                    csv_written = True
+                    break
+        except Exception:
+            pass
+
+    if not csv_written:
+        if session is None:
+            raise RuntimeError(
+                f"Sheet tab {tab!r} is not publicly exportable. "
+                "Local authentication is required. Run 'python3 scripts/setup.py --credentials <file.json>'."
+            )
+        range_name = f"'{tab.replace(chr(39), chr(39)*2)}'!A:I"
+        api_url = (
+            'https://sheets.googleapis.com/v4/spreadsheets/'
+            + urllib.parse.quote(sheet_id, safe='') + '/values/'
+            + urllib.parse.quote(range_name, safe='') + '?valueRenderOption=UNFORMATTED_VALUE'
+        )
+        resp = session.get(api_url, timeout=30)
+        if resp.status_code == 400:
+            raise ValueError(f"Sheet tab {tab!r} was not found or could not be read; run create_schema.py to configure it")
+        resp.raise_for_status()
+        values = resp.json().get('values', [])
+        if not values:
+            raise ValueError('sheet is empty')
+        with target_path.open('w', newline='', encoding='utf-8') as handle:
+            writer = csv.writer(handle)
+            for row in values:
+                writer.writerow(row)
+        csv_written = True
+
+    return target_path
+
+
+def read_csv_rows(csv_path):
+    """Read and validate rows from a CSV file."""
+    with Path(csv_path).open(newline='', encoding='utf-8-sig') as handle:
+        reader = csv.DictReader(handle)
+        if not reader.fieldnames:
+            raise ValueError('CSV is missing required columns')
+        headers = [str(h).strip() for h in reader.fieldnames if h]
+        if len(headers) != len(set(headers)):
+            raise ValueError('CSV header contains duplicate column names')
+        missing = set(FIELDS) - set(headers)
+        if missing:
+            raise ValueError('CSV is missing columns: ' + ', '.join(sorted(missing)))
+        rows = list(reader)
+    if not rows:
+        raise ValueError('menu has no dishes')
+    return rows
+
+
+def sheet_rows(sheet_url, tab, session=None):
+    """Download sheet CSV to temp, parse rows, and clean up temp files."""
+    temp_csv = download_sheet_csv(sheet_url, tab, session=session)
+    try:
+        return read_csv_rows(temp_csv)
+    finally:
+        clean_temp_files(temp_csv)
 
 
 def cell_text(value):
@@ -151,30 +353,6 @@ def normalize(rows):
     return {'version': 1, 'items': items}
 
 
-def sheet_rows(sheet_url, tab):
-    sheet_id = spreadsheet_id(sheet_url)
-    session = authorized_session(['https://www.googleapis.com/auth/spreadsheets.readonly'])
-    range_name = f"'{tab.replace(chr(39), chr(39)*2)}'!A:I"
-    url = ('https://sheets.googleapis.com/v4/spreadsheets/'
-           + urllib.parse.quote(sheet_id, safe='') + '/values/'
-           + urllib.parse.quote(range_name, safe='') + '?valueRenderOption=UNFORMATTED_VALUE')
-    response = session.get(url, timeout=30)
-    if response.status_code == 400:
-        raise ValueError(f'Sheet tab {tab!r} was not found or could not be read; run create_schema.py locally to create/configure it')
-    response.raise_for_status()
-    values = response.json().get('values', [])
-    if not values:
-        raise ValueError('sheet is empty')
-    headers = [str(v).strip() for v in values[0]]
-    if len(headers) != len(set(headers)):
-        raise ValueError('sheet header contains duplicate column names')
-    missing = set(FIELDS) - set(headers)
-    if missing:
-        raise ValueError('sheet is missing columns: ' + ', '.join(sorted(missing)))
-    rows = [dict(zip(headers, cells + [''] * (len(headers)-len(cells)))) for cells in values[1:]]
-    return rows
-
-
 def download_image(url, target, max_width=900, max_height=900, quality=78):
     """Keep sheet supplied images as optimized, same-origin static files."""
     import requests
@@ -216,12 +394,6 @@ def localize_images(payload, max_width=900, max_height=900, quality=78):
         del item['image_url']
     return payload
 
-
-# Cards reach about 400 CSS pixels at the two-column breakpoint.
-# Export at 2x density; the layout displays them in a 4:3 frame.
-MENU_IMAGE_MAX_WIDTH = 800
-MENU_IMAGE_MAX_HEIGHT = 600
-MENU_IMAGE_QUALITY = 78
 
 def clear_unused_assets(dry_run=False):
     """Remove only image assets absent from generated menu and site references."""
@@ -282,22 +454,37 @@ def main():
     parser.add_argument('--clear-unused-assets', action='store_true', help='manually remove unused local image assets without reading Google Sheets')
     parser.add_argument('--dry-run', action='store_true', help='preview asset cleanup without deleting files')
     args = parser.parse_args()
+
     if args.clear_unused_assets:
         clear_unused_assets(args.dry_run)
         return
+
     from setup import ensure_runtime
     ensure_runtime()
-    if args.csv:
-        with args.csv.open(newline='', encoding='utf-8-sig') as handle:
-            reader = csv.DictReader(handle)
-            if not reader.fieldnames or set(FIELDS) - set(reader.fieldnames):
-                raise ValueError('CSV is missing required columns')
-            rows = list(reader)
-    else:
-        rows = sheet_rows(args.sheet_url, args.tab)
-    payload = localize_images(normalize(rows), MENU_IMAGE_MAX_WIDTH, MENU_IMAGE_MAX_HEIGHT, MENU_IMAGE_QUALITY)
-    write_menu_files(payload, args.output)
-    print(f'Validated {len(payload["items"])} dishes and wrote {args.output}')
+
+    temp_csv = None
+    try:
+        if args.csv:
+            csv_path = args.csv
+        else:
+            session = None
+            try:
+                session = authorized_session(['https://www.googleapis.com/auth/spreadsheets.readonly'])
+            except Exception as e:
+                pass
+            print(f'Downloading menu CSV for tab {args.tab!r}...')
+            temp_csv = download_sheet_csv(args.sheet_url, args.tab, session=session)
+            csv_path = temp_csv
+            print(f'Downloaded menu CSV to temporary file: {csv_path}')
+
+        rows = read_csv_rows(csv_path)
+        payload = localize_images(normalize(rows), MENU_IMAGE_MAX_WIDTH, MENU_IMAGE_MAX_HEIGHT, MENU_IMAGE_QUALITY)
+        write_menu_files(payload, args.output)
+        print(f'Validated {len(payload["items"])} dishes and wrote {args.output}')
+    finally:
+        clean_temp_files(temp_csv)
+        if temp_csv:
+            print('Cleaned up temporary CSV files.')
 
 
 if __name__ == '__main__':
@@ -306,3 +493,4 @@ if __name__ == '__main__':
     except Exception as exc:
         print(f'Menu sync failed: {exc}', file=sys.stderr)
         sys.exit(1)
+

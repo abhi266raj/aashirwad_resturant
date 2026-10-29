@@ -102,6 +102,58 @@ class MenuSyncTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'image'):
             normalize([row])
 
+    def test_download_sheet_csv_and_cleanup(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str) / 'temp_sub'
+            mock_session = unittest.mock.Mock()
+            mock_resp = unittest.mock.Mock()
+            mock_resp.status_code = 200
+            # Return valid CSV header and row
+            mock_resp.text = ','.join(FIELDS) + '\n1,Makhan Roti,Roti & Naan,20,Veg,Hot roti,No,,1\n'
+            mock_session.get.return_value = mock_resp
+
+            csv_file = update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=mock_session, temp_dir=temp_dir)
+            self.assertTrue(csv_file.is_file())
+            self.assertTrue(str(csv_file).startswith(str(temp_dir)))
+
+            # Verify read_csv_rows parses it properly
+            rows = update.read_csv_rows(csv_file)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]['name'], 'Makhan Roti')
+
+            # Verify clean_temp_files deletes file and directory
+            update.clean_temp_files(csv_file, temp_dir=temp_dir)
+            self.assertFalse(csv_file.exists())
+            self.assertFalse(temp_dir.exists())
+
+    def test_download_sheet_csv_api_fallback_and_cleanup(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str) / 'temp_sub'
+            mock_session = unittest.mock.Mock()
+            export_fail = unittest.mock.Mock(status_code=403, text='Forbidden')
+            api_success = unittest.mock.Mock(
+                status_code=200,
+                json=lambda: {'values': [FIELDS, ['1', 'Makhan Roti', 'Roti & Naan', '20', 'Veg', 'Hot roti', 'No', '', '1']]}
+            )
+            mock_session.get.side_effect = [export_fail, export_fail, api_success]
+
+            csv_file = update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=mock_session, temp_dir=temp_dir)
+            self.assertTrue(csv_file.is_file())
+
+            rows = update.read_csv_rows(csv_file)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]['name'], 'Makhan Roti')
+
+            update.clean_temp_files(csv_file, temp_dir=temp_dir)
+            self.assertFalse(csv_file.exists())
+
+    def test_local_authentication_missing_message(self):
+        with unittest.mock.patch.dict('os.environ', {}, clear=True), \
+             unittest.mock.patch.object(update, 'find_local_credentials_path', return_value=None), \
+             unittest.mock.patch('google.auth.default', side_effect=Exception('no ADC')):
+            with self.assertRaisesRegex(RuntimeError, 'Local authentication not configured'):
+                update.authorized_session(['https://www.googleapis.com/auth/spreadsheets.readonly'])
+
 
 if __name__ == '__main__':
     unittest.main()
