@@ -38,14 +38,13 @@ def set_values(session, base, tab, cells, values):
     checked(response)
 
 
-def create_schema(sheet_url=None, tab=None, seed=False, name=None, create_new=False):
+def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
     config = load_config()
     sheet_url = sheet_url if sheet_url is not None else config['sheet']['url']
     tab = tab if tab is not None else config['sheet']['name']
-    name = name if name is not None else config['sheet']['spreadsheet_title']
     session = authorized_session(['https://www.googleapis.com/auth/spreadsheets'])
     if create_new or not sheet_url:
-        created = checked(session.post(API, json={'properties': {'title': name}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))
+        created = checked(session.post(API, json={'properties': {'title': tab}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))
         sheet_url = created['spreadsheetUrl']
         print('Created spreadsheet: ' + sheet_url)
     sheet_id = spreadsheet_id(sheet_url)
@@ -66,7 +65,7 @@ def create_schema(sheet_url=None, tab=None, seed=False, name=None, create_new=Fa
         {'updateSheetProperties': {'properties': {'sheetId': tab_id, 'gridProperties': {'frozenRowCount': 1}}, 'fields': 'gridProperties.frozenRowCount'}},
         {'repeatCell': {'range': {'sheetId': tab_id, 'startRowIndex': 0, 'endRowIndex': 1}, 'cell': {'userEnteredFormat': {'backgroundColor': {'red': 0.02, 'green': 0.31, 'blue': 0.23}, 'textFormat': {'foregroundColor': {'red': 1, 'green': 1, 'blue': 1}, 'bold': True}}}, 'fields': 'userEnteredFormat'}},
     ]
-    for column, values in ((2, load_config()['sheet']['categories']), (4, ['Veg', 'Non-Veg']), (6, ['Yes', 'No'])):
+    for column, values in ((2, load_config()['categories']), (4, ['Veg', 'Non-Veg']), (6, ['Yes', 'No'])):
         requests.append({'setDataValidation': {'range': {'sheetId': tab_id, 'startRowIndex': 1, 'startColumnIndex': column, 'endColumnIndex': column + 1}, 'rule': {'condition': {'type': 'ONE_OF_LIST', 'values': [{'userEnteredValue': value} for value in values]}, 'strict': True, 'showCustomUi': True}}})
     formulas = {
         0: '=OR(A2="",AND(ISNUMBER(A2),A2>0,A2=INT(A2),COUNTIF(A$2:A,A2)=1))',
@@ -88,7 +87,7 @@ def create_schema(sheet_url=None, tab=None, seed=False, name=None, create_new=Fa
         values = [[int(row[field]) if field in ('id', 'price', 'sort_priority') and row.get(field, '') else row.get(field, '') for field in FIELDS] for row in rows]
         if values:
             set_values(session, base, tab, f'A2:I{len(values) + 1}', values)
-    config['sheet'].update(url=sheet_url, name=tab, spreadsheet_title=name)
+    config['sheet'].update(url=sheet_url, name=tab)
     save_config(config)
     print(f'Menu schema ready: {len(FIELDS)} columns, Veg/Non-Veg and Yes/No dropdowns')
 
@@ -99,12 +98,11 @@ def main():
     parser.add_argument('--sheet-url', default=default_sheet_url(), help='Google Sheet URL or ID; defaults to scripts/config.json')
     parser.add_argument('--sheet-name', '--tab', '--name', dest='tab', default=config['sheet']['name'], help='tab to configure or create')
     parser.add_argument('--seed', action='store_true', help='add the 50 starter dishes only if the Menu tab is empty')
-    parser.add_argument('--spreadsheet-title', default=config['sheet']['spreadsheet_title'], help='workbook title when creating a new spreadsheet')
     parser.add_argument('--new', action='store_true', help='create a new spreadsheet instead of using the default link')
     args = parser.parse_args()
     from setup import ensure_runtime
     ensure_runtime()
-    create_schema(args.sheet_url, args.tab, args.seed, args.spreadsheet_title, args.new)
+    create_schema(args.sheet_url, args.tab, args.seed, args.new)
 
 
 if __name__ == '__main__':

@@ -4,11 +4,11 @@ A separate static HTML, CSS and JavaScript restaurant website for Hazaribagh. Th
 
 ## Shared configuration
 
-Both Python scripts read `scripts/config.json`. Its `sheet.url` is the private spreadsheet link, `sheet.name` is the worksheet/tab name (currently `Menu2`), and `sheet.spreadsheet_title` is the workbook title. Image dimensions are defined by the menu layout in the updater code. Credentials never belong in this file.
+Both Python scripts read `scripts/config.json`. Its `sheet.url` is the private spreadsheet link, `sheet.name` is the worksheet/tab name (currently `Menu2`). Image dimensions are defined by the menu layout in the updater code. Credentials never belong in this file.
 
 ## Scripts
 
-- `python3 scripts/create_schema.py`: run locally with Google edit access to configure the sheet's columns, strict dropdowns, validation, and formatting. It preserves existing dishes and IDs. Use `--seed` only for an empty menu. Use `--new --spreadsheet-title "Workbook title" --sheet-name "Menu2"` to create a spreadsheet; successful creation saves its URL in the shared configuration.
+- `python3 scripts/create_schema.py`: run locally with Google edit access to configure the sheet's columns, strict dropdowns, validation, and formatting. It preserves existing dishes and IDs. Use `--seed` only for an empty menu. Use `--new --sheet-name "Menu2"` to create a spreadsheet; successful creation saves its URL in the shared configuration.
 - `python3 scripts/update.py`: reads the private sheet with read-only access, downloads supplied image URLs, resizes and compresses them, and updates the static files in `site/`. It never assigns or validates dish IDs.
 
 Both accept `--sheet-url` and `--tab` overrides. `--csv data/menu-template.csv` lets the updater use the included starter data without Google authentication. All Python implementation code is under `scripts/`; tests are under `tests/`.
@@ -21,7 +21,7 @@ For GitHub, share this sheet with a dedicated service account as **Viewer**, the
 
 ## Editing the menu
 
-Each row is a dish. Add rows freely and choose a category from the dropdown. To add categories, edit `sheet.categories` in `scripts/config.json` and rerun the local setup script. Columns are `id`, `name`, `category`, `price`, `diet`, `description`, `popular`, `image`, `sort_priority`.
+Each row is a dish. Add rows freely and choose a category from the dropdown. To add categories, edit `categories` in `scripts/config.json` and rerun the local setup script. Columns are `id`, `name`, `category`, `price`, `diet`, `description`, `popular`, `image`, `sort_priority`.
 
 Google Sheets enforces unique positive numeric IDs, positive whole rupee prices, Veg/Non-Veg choices, Yes/No choices, optional HTTPS image links and non-negative whole sort prioritys when the setup script applies the schema. Existing IDs are stored values and move with their dishes. Enter a new permanent ID as one greater than the highest current ID. Native formulas cannot safely assign permanent IDs automatically. Python reads ID values without checking or changing them.
 

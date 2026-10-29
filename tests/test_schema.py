@@ -18,8 +18,7 @@ def reply(payload):
 class SchemaTests(unittest.TestCase):
     def test_configured_missing_tab_is_created_and_seeded_as_numbers(self):
         config = {'sheet': {'url': 'https://docs.google.com/spreadsheets/d/test/edit',
-                           'name': 'Menu2', 'spreadsheet_title': 'Restaurant',
-                           'categories': ['Roti & Naan']}}
+                           'name': 'Menu2'}, 'categories': ['Roti & Naan']}
         session = Mock()
         session.get.side_effect = [reply({'sheets': [{'properties': {'title': 'Menu', 'sheetId': 0}}]}),
                                    reply({}), reply({})]
@@ -42,7 +41,7 @@ class SchemaTests(unittest.TestCase):
         self.assertEqual(save.call_args.args[0]['sheet']['name'], 'Menu2')
 
     def test_existing_tab_is_used_without_creating_another(self):
-        config = {'sheet': {'url': 'test', 'name': 'Menu2', 'spreadsheet_title': 'Restaurant', 'categories': ['Rice']}}
+        config = {'sheet': {'url': 'test', 'name': 'Menu2'}, 'categories': ['Rice']}
         session = Mock()
         session.get.side_effect = [reply({'sheets': [{'properties': {'title': 'Menu2', 'sheetId': 7}}]}), reply({'values': [FIELDS]})]
         session.post.return_value = reply({})
