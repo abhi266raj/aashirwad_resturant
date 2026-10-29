@@ -16,12 +16,12 @@ else
   PYTHON="python3"
 fi
 
-"$PYTHON" "$SCRIPT_DIR/update.py" "$@"
+"$PYTHON" "$SCRIPT_DIR/update.py" --deploy "$@"
 result_code=$?
 
 if [[ $result_code -eq 0 ]]; then
-  printf '\n✓ Menu update completed successfully!\n'
-  printf 'Open index.html in your browser to view the latest menu.\n\n'
+  printf '\n✓ Menu update and automatic deployment completed successfully!\n'
+  printf 'Live site: https://abhi266raj.github.io/aashirwad_resturant/\n\n'
 else
   printf '\n✗ Menu update failed. See the message above.\n\n'
 fi

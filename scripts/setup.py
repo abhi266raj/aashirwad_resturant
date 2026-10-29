@@ -167,15 +167,64 @@ def setup_auth_interactive():
         print('\nSetup cancelled.')
 
 
+def sync_github_secrets():
+    """Sync local token or credentials to GitHub repository secrets using gh CLI."""
+    if not shutil.which('gh'):
+        print("GitHub CLI ('gh') is not installed. To sync secrets, install gh or set GOOGLE_OAUTH_TOKEN_JSON manually.")
+        return False
+    auth_proc = subprocess.run(['gh', 'auth', 'status'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if auth_proc.returncode != 0:
+        print("GitHub CLI is not logged in. Run 'gh auth login' to authenticate.")
+        return False
+
+    token_candidates = [
+        AUTH_DIR / 'token.json',
+        AUTH_DIR / 'credentials.json',
+        Path.home() / '.config' / 'gcloud' / 'application_default_credentials.json',
+    ]
+    source_file = None
+    for cand in token_candidates:
+        if cand.is_file():
+            source_file = cand
+            break
+
+    if not source_file:
+        print("No local token or credentials file found to sync to GitHub.")
+        return False
+
+    secret_name = 'GOOGLE_OAUTH_TOKEN_JSON'
+    try:
+        data = json.loads(source_file.read_text(encoding='utf-8'))
+        if data.get('type') == 'service_account':
+            secret_name = 'GOOGLE_SERVICE_ACCOUNT_JSON'
+    except Exception:
+        pass
+
+    print(f"Setting GitHub secret {secret_name} from {source_file.name}...")
+    with open(source_file, 'rb') as handle:
+        res = subprocess.run(['gh', 'secret', 'set', secret_name], stdin=handle, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=str(ROOT))
+    if res.returncode == 0:
+        print(f"✓ Successfully synced {secret_name} to GitHub repository secrets.")
+        return True
+    else:
+        print(f"Failed to sync secret: {res.stderr.strip()}")
+        return False
+
+
 def main():
     parser = argparse.ArgumentParser(description='Prepare Python environment and local authentication')
     parser.add_argument('--credentials', type=Path, help='path to Service Account or OAuth credentials JSON')
     parser.add_argument('--auth', action='store_true', help='set up or check local authentication')
     parser.add_argument('--check', action='store_true', help='check environment and authentication status')
+    parser.add_argument('--sync-github', action='store_true', help='sync local Google token to GitHub repository secrets for Actions deployment')
     args = parser.parse_args()
 
     python = prepare()
     print(f'Environment: {python} (ready)')
+
+    if args.sync_github:
+        sync_github_secrets()
+        return
 
     if args.credentials:
         configure_credentials(args.credentials)

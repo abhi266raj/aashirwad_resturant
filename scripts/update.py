@@ -156,7 +156,21 @@ def find_credentials(scopes):
     if local_file:
         return credentials_from_file(local_file, scopes)
 
-    # 6. Active gcloud credentials from shell
+    # 6. Fetch from system gcloud user credentials if available and persist locally
+    adc_file = Path.home() / '.config' / 'gcloud' / 'application_default_credentials.json'
+    if adc_file.is_file():
+        try:
+            data = json.loads(adc_file.read_text(encoding='utf-8'))
+            if data.get('type') == 'authorized_user' and 'refresh_token' in data:
+                from google.oauth2.credentials import Credentials
+                creds = Credentials.from_authorized_user_info(data)
+                if creds:
+                    save_user_token(creds)
+                    return creds
+        except Exception:
+            pass
+
+    # 7. Active gcloud credentials from shell
     try:
         import subprocess
         proc = subprocess.run(['gcloud', 'auth', 'print-access-token'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
@@ -166,7 +180,7 @@ def find_credentials(scopes):
     except Exception:
         pass
 
-    # 7. Application Default Credentials (ADC)
+    # 8. Application Default Credentials (ADC)
     try:
         import google.auth
         creds, _ = google.auth.default(scopes=scopes)
@@ -255,7 +269,15 @@ def authorized_session(scopes, interactive=True):
             creds.refresh(Request())
             save_user_token(creds)
         except RefreshError as exc:
-            raise RuntimeError(f'Credential refresh failed: {exc}') from exc
+            if 'restricted_client' in str(exc) and hasattr(creds, '_scopes'):
+                creds._scopes = None
+                try:
+                    creds.refresh(Request())
+                    save_user_token(creds)
+                except RefreshError as retry_exc:
+                    raise RuntimeError(f'Credential refresh failed: {retry_exc}') from retry_exc
+            else:
+                raise RuntimeError(f'Credential refresh failed: {exc}') from exc
     return AuthorizedSession(creds)
 
 
@@ -578,6 +600,54 @@ def write_menu_files(payload, output):
         temporary.replace(path)
 
 
+def deploy_to_github():
+    """Commit any updated menu files and push to GitHub to trigger automatic deployment."""
+    import subprocess
+    try:
+        proc = subprocess.run(['git', 'rev-parse', '--is-inside-work-tree'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=str(ROOT))
+        if proc.returncode != 0:
+            print("Not inside a git repository; skipping automatic deployment.")
+            return False
+
+        # Stage menu files
+        subprocess.run(['git', 'add', 'site/menu.json', 'site/menu-snapshot.js', 'site/assets/sheet'], check=False, cwd=str(ROOT))
+
+        # Check if changes are staged
+        diff_proc = subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=str(ROOT))
+        if diff_proc.returncode != 0:
+            commit_proc = subprocess.run(
+                ['git', 'commit', '-m', 'Update menu from Google Sheet'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                cwd=str(ROOT)
+            )
+            if commit_proc.returncode == 0:
+                print("✓ Committed updated menu files to local git.")
+            else:
+                print(f"Git commit notice: {commit_proc.stderr.strip()}")
+
+        # Push to remote
+        print("Pushing updates to GitHub for automatic deployment...")
+        push_proc = subprocess.run(
+            ['git', 'push', 'origin', 'HEAD:main'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=str(ROOT)
+        )
+        if push_proc.returncode == 0:
+            print("✓ Pushed to GitHub. Automatic deployment triggered at:")
+            print("  https://abhi266raj.github.io/aashirwad_resturant/\n")
+            return True
+        else:
+            print(f"Notice: Git push failed ({push_proc.stderr.strip()}). Local files were updated successfully.")
+            return False
+    except Exception as exc:
+        print(f"Notice: Automatic deployment skipped ({exc}). Local files were updated successfully.")
+        return False
+
+
 def main():
     config = load_config()
     parser = argparse.ArgumentParser()
@@ -587,6 +657,7 @@ def main():
     parser.add_argument('--output', type=Path, default=SITE / 'menu.json')
     parser.add_argument('--clear-unused-assets', action='store_true', help='manually remove unused local image assets without reading Google Sheets')
     parser.add_argument('--dry-run', action='store_true', help='preview asset cleanup without deleting files')
+    parser.add_argument('--deploy', action='store_true', help='automatically commit and push updated menu to GitHub to trigger deployment')
     args = parser.parse_args()
 
     if args.clear_unused_assets:
@@ -615,6 +686,9 @@ def main():
         payload = localize_images(normalize(rows), MENU_IMAGE_MAX_WIDTH, MENU_IMAGE_MAX_HEIGHT, MENU_IMAGE_QUALITY)
         write_menu_files(payload, args.output)
         print(f'Validated {len(payload["items"])} dishes and wrote {args.output}')
+
+        if args.deploy:
+            deploy_to_github()
     finally:
         clean_temp_files(temp_csv)
         if temp_csv:

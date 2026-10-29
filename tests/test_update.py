@@ -155,6 +155,8 @@ class MenuSyncTests(unittest.TestCase):
     def test_local_authentication_missing_message(self):
         with unittest.mock.patch.dict('os.environ', {}, clear=True), \
              unittest.mock.patch.object(update, 'find_local_credentials_path', return_value=None), \
+             unittest.mock.patch.object(update, 'AUTH_DIR', Path('/nonexistent')), \
+             unittest.mock.patch.object(Path, 'home', return_value=Path('/nonexistent')), \
              unittest.mock.patch('google.auth.default', side_effect=Exception('no ADC')):
             with self.assertRaisesRegex(RuntimeError, 'Local authentication not configured'):
                 update.authorized_session(['https://www.googleapis.com/auth/spreadsheets.readonly'], interactive=False)
@@ -254,6 +256,44 @@ class MenuSyncTests(unittest.TestCase):
                 target = setup.configure_credentials(source_file)
                 self.assertEqual(target, auth_dir / 'token.json')
                 self.assertTrue(target.is_file())
+
+    def test_find_credentials_fetches_from_system_adc(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            fake_home = Path(temp_dir_str)
+            adc_dir = fake_home / '.config' / 'gcloud'
+            adc_dir.mkdir(parents=True)
+            adc_file = adc_dir / 'application_default_credentials.json'
+            adc_file.write_text('{"type": "authorized_user", "refresh_token": "adc-ref-123"}', encoding='utf-8')
+
+            auth_dir = fake_home / '.google-auth'
+            mock_creds = unittest.mock.Mock(valid=True, refresh_token='adc-ref-123')
+
+            with unittest.mock.patch.object(update, 'AUTH_DIR', auth_dir), \
+                 unittest.mock.patch.object(Path, 'home', return_value=fake_home), \
+                 unittest.mock.patch.object(update, 'find_local_credentials_path', return_value=None), \
+                 unittest.mock.patch('google.oauth2.credentials.Credentials.from_authorized_user_info', return_value=mock_creds), \
+                 unittest.mock.patch.object(update, 'save_user_token') as mock_save:
+                creds = update.find_credentials(['https://www.googleapis.com/auth/spreadsheets.readonly'])
+                self.assertEqual(creds, mock_creds)
+                mock_save.assert_called_once_with(mock_creds)
+
+    def test_deploy_to_github_runs_git_stages_and_push(self):
+        with unittest.mock.patch('subprocess.run') as mock_run:
+            # git is-inside-work-tree -> 0
+            # git add -> 0
+            # git diff --cached --quiet -> 1 (has diff)
+            # git commit -> 0
+            # git push -> 0
+            mock_run.side_effect = [
+                unittest.mock.Mock(returncode=0),
+                unittest.mock.Mock(returncode=0),
+                unittest.mock.Mock(returncode=1),
+                unittest.mock.Mock(returncode=0),
+                unittest.mock.Mock(returncode=0),
+            ]
+            result = update.deploy_to_github()
+            self.assertTrue(result)
+            self.assertEqual(mock_run.call_count, 5)
 
 
 if __name__ == '__main__':
