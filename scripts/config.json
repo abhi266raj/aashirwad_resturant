@@ -1,4 +1,23 @@
 {
+  "restaurant": {
+    "name": "aashirwad",
+    "tagline": "Authentic North Indian, Tandoori & Chinese family restaurant serving Hazaribagh. Fresh food and free home delivery.",
+    "whatsapp_number": "7004230188",
+    "whatsapp_display": "+91 70042 30188",
+    "other_contact_numbers": [
+      { "number": "9334047955", "display": "+91 93340 47955" },
+      { "number": "6207228264", "display": "+91 62072 28264" },
+      { "number": "9931579212", "display": "+91 99315 79212" }
+    ],
+    "location": {
+      "city": "Hazaribagh",
+      "address": "Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301",
+      "landmark": "Near Bansilal Chowk",
+      "timings": "10:30 AM – 10:30 PM (All 7 Days)",
+      "coordinates": "23.9928812, 85.3616478",
+      "google_maps_url": "https://www.google.co.in/maps/place/Ashirwad+Restaurant/@23.9928812,85.3616478,17z/data=!4m6!3m5!1s0x39f49c1b13d3edcf:0xce0a5655f48c7786!8m2!3d23.9928812!4d85.3616478!16s%2Fg%2F11cs5jppyh"
+    }
+  },
   "sheet": {
     "url": "https://docs.google.com/spreadsheets/d/1bQyKNGmJwIZf4rUSHgDXJNtpXkvbUaNmiN4i5izOePA/edit",
     "name": "Menu2"

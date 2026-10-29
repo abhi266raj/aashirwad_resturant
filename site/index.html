@@ -51,8 +51,8 @@
       <!-- Left: Brand Logo & Delivery Location -->
       <div class="flex items-center gap-3 min-w-0">
         <a href="#menu-area" class="flex items-center gap-2 flex-shrink-0">
-          <img src="brand-mark.svg?v=2" alt="Aashirwad logo" class="w-10 h-10 rounded-xl shadow-sm" />
-          <span class="font-extrabold text-xl sm:text-2xl tracking-tight text-stone-900 font-heading lowercase">aashirwad</span>
+          <img src="brand-mark.svg?v=2" alt="Restaurant logo" class="w-10 h-10 rounded-xl shadow-sm" />
+          <span class="font-extrabold text-xl sm:text-2xl tracking-tight text-stone-900 font-heading lowercase brand-restaurant-name">aashirwad</span>
         </a>
 
         <!-- Permanent Cookie Location Button in Header -->
@@ -151,7 +151,7 @@
     <!-- Active Count Indicator -->
     <div class="flex items-center justify-between px-1 text-xs text-stone-500 font-semibold">
       <span id="menu-count-label">Loading dishes...</span>
-      <span class="text-orange-700 font-bold">Free Home Delivery in Hazaribagh</span>
+      <span id="hero-delivery-badge" class="text-orange-700 font-bold">Free Home Delivery in Hazaribagh</span>
     </div>
 
     <!-- Searchable Menu Grid -->
@@ -163,9 +163,9 @@
     <section id="about-section" class="pt-8 pb-10 border-t border-stone-200">
       <div class="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 shadow-sm space-y-3">
         <span class="text-[11px] font-bold text-orange-700 uppercase tracking-wider">About Us</span>
-        <h2 class="text-xl font-bold font-heading text-stone-900">Welcome to aashirwad</h2>
-        <p class="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-3xl">
-          Located around Bansilal Chowk in Hazaribagh, <strong>aashirwad</strong> offers wholesome, authentic North Indian, Tandoori, Mughlai, and Indo-Chinese food. We take pride in fresh preparations, clay-oven tandoori breads, rich gravies, steamed momos, and aromatic biryanis. All orders placed on our website enjoy complimentary home delivery across Hazaribagh.
+        <h2 id="about-restaurant-heading" class="text-xl font-bold font-heading text-stone-900">Welcome to aashirwad</h2>
+        <p id="about-restaurant-tagline" class="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-3xl">
+          Located around Bansilal Chowk in Hazaribagh, <strong class="brand-restaurant-name">aashirwad</strong> offers wholesome, authentic North Indian, Tandoori, Mughlai, and Indo-Chinese food. We take pride in fresh preparations, clay-oven tandoori breads, rich gravies, steamed momos, and aromatic biryanis. All orders placed on our website enjoy complimentary home delivery across Hazaribagh.
         </p>
       </div>
     </section>
@@ -178,12 +178,13 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm text-stone-700">
           <div class="space-y-2">
-            <p><strong>Address:</strong> Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301</p>
-            <p><strong>Operating Hours:</strong> 10:30 AM – 10:30 PM (All 7 Days)</p>
-            <p><strong>GPS Coordinates:</strong> 23.9928812, 85.3616478</p>
+            <p><strong>Address:</strong> <span id="about-restaurant-address">Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301</span></p>
+            <p><strong>Operating Hours:</strong> <span id="about-restaurant-timings">10:30 AM – 10:30 PM (All 7 Days)</span></p>
+            <p><strong>GPS Coordinates:</strong> <span id="about-restaurant-coordinates">23.9928812, 85.3616478</span></p>
           </div>
           <div>
             <a
+              id="about-maps-link"
               href="https://www.google.co.in/maps/place/Ashirwad+Restaurant/@23.9928812,85.3616478,17z/data=!4m6!3m5!1s0x39f49c1b13d3edcf:0xce0a5655f48c7786!8m2!3d23.9928812!4d85.3616478!16s%2Fg%2F11cs5jppyh"
               target="_blank"
               rel="noopener noreferrer"
@@ -202,7 +203,7 @@
         <span class="text-[11px] font-bold text-orange-700 uppercase tracking-wider">Contact</span>
         <h2 class="text-xl font-bold font-heading text-stone-900">All Restaurant Phone Numbers</h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div id="contact-phones-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div class="p-3.5 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between">
             <span class="font-extrabold text-sm text-stone-900">+91 70042 30188</span>
             <div class="flex items-center gap-1">
@@ -257,7 +258,7 @@
 
       <form id="address-form" class="space-y-3">
         <div>
-          <label for="modal-address" class="block text-xs font-bold text-stone-700 mb-1">Delivery Address & Landmark in Hazaribagh</label>
+          <label id="modal-address-label" for="modal-address" class="block text-xs font-bold text-stone-700 mb-1">Delivery Address & Landmark in Hazaribagh</label>
           <input
             type="text"
             id="modal-address"
@@ -314,7 +315,7 @@
       <div class="flex items-center justify-between border-b border-stone-100 pb-3">
         <div class="flex items-center gap-2">
           <span class="text-xl">📞</span>
-          <h3 class="font-extrabold text-stone-900 text-base font-heading">Call aashirwad</h3>
+          <h3 id="call-modal-heading" class="font-extrabold text-stone-900 text-base font-heading">Call aashirwad</h3>
         </div>
         <button id="close-call-modal-btn" class="p-1 text-stone-400 hover:text-stone-700 cursor-pointer" aria-label="Close">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -323,7 +324,7 @@
 
       <p class="text-xs text-stone-500">Tap to call directly:</p>
 
-      <div class="space-y-2">
+      <div id="call-modal-phones-list" class="space-y-2">
         <div class="p-3 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between gap-2">
           <span class="font-extrabold text-sm text-stone-900">+91 70042 30188</span>
           <div class="flex items-center gap-1.5">
@@ -437,7 +438,7 @@
         id="order-whatsapp-btn"
         class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow transition flex items-center justify-center gap-2 cursor-pointer">
         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
-        <span>Order via WhatsApp (7004230188)</span>
+        <span id="order-whatsapp-btn-text">Order via WhatsApp (7004230188)</span>
       </button>
 
       <!-- SMS Button -->
@@ -445,7 +446,7 @@
         id="order-sms-btn"
         class="w-full py-2.5 px-4 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
         <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-        <span>Send Order via SMS (7004230188)</span>
+        <span id="order-sms-btn-text">Send Order via SMS (7004230188)</span>
       </button>
 
       <!-- Helpers -->
@@ -474,10 +475,10 @@
         <!-- Column 1: Restaurant Info -->
         <div class="space-y-2">
           <div class="flex items-center gap-2">
-            <img src="brand-mark.svg?v=2" alt="Aashirwad logo" class="w-9 h-9 rounded-xl" />
-            <span class="text-white font-extrabold text-base font-heading lowercase">aashirwad</span>
+            <img src="brand-mark.svg?v=2" alt="Restaurant logo" class="w-9 h-9 rounded-xl" />
+            <span id="footer-restaurant-name" class="text-white font-extrabold text-base font-heading lowercase brand-restaurant-name">aashirwad</span>
           </div>
-          <p class="text-stone-400 leading-relaxed text-[11px]">
+          <p id="footer-restaurant-tagline" class="text-stone-400 leading-relaxed text-[11px]">
             Authentic North Indian, Tandoori & Chinese family restaurant serving Hazaribagh. Fresh food and free home delivery.
           </p>
         </div>
@@ -496,14 +497,14 @@
         <!-- Column 3: Location Details -->
         <div class="space-y-2">
           <h4 class="text-stone-200 font-bold uppercase tracking-wider text-[11px]">Address & Hours</h4>
-          <p class="text-[11px] text-stone-300">Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand 825301</p>
-          <p class="text-[11px] text-orange-400 font-semibold">10:30 AM – 10:30 PM (Daily)</p>
+          <p id="footer-restaurant-address" class="text-[11px] text-stone-300">Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand 825301</p>
+          <p id="footer-restaurant-timings" class="text-[11px] text-orange-400 font-semibold">10:30 AM – 10:30 PM (Daily)</p>
         </div>
 
         <!-- Column 4: Contact Numbers List -->
         <div class="space-y-2">
           <h4 class="text-stone-200 font-bold uppercase tracking-wider text-[11px]">Phone Numbers</h4>
-          <ul class="space-y-1 text-[11px] font-mono text-stone-300">
+          <ul id="footer-phones-list" class="space-y-1 text-[11px] font-mono text-stone-300">
             <li><a href="tel:7004230188" class="hover:text-white">+91 70042 30188</a></li>
             <li><a href="tel:9334047955" class="hover:text-white">+91 93340 47955</a></li>
             <li><a href="tel:6207228264" class="hover:text-white">+91 62072 28264</a></li>
@@ -514,7 +515,7 @@
       </div>
 
       <div class="pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-stone-500 text-center sm:text-left">
-        <p>© 2026 aashirwad. All rights reserved.</p>
+        <p id="footer-copyright">© 2026 aashirwad. All rights reserved.</p>
         <p>Hosted on GitHub Pages: <a href="https://abhi266raj.github.io/aashirwad_resturant/" class="text-stone-400 hover:text-white underline">https://abhi266raj.github.io/aashirwad_resturant/</a></p>
       </div>
 

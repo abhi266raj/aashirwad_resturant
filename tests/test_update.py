@@ -295,6 +295,57 @@ class MenuSyncTests(unittest.TestCase):
             self.assertTrue(result)
             self.assertEqual(mock_run.call_count, 5)
 
+    def test_build_restaurant_payload_generic(self):
+        test_config = {
+            'restaurant': {
+                'name': 'Spice Garden',
+                'tagline': 'Authentic taste in Ranchi.',
+                'whatsapp_number': '9876543210',
+                'other_contact_numbers': [
+                    {'number': '9123456780', 'display': '+91 91234 56780'}
+                ],
+                'location': {
+                    'city': 'Ranchi',
+                    'address': 'Main Road, Ranchi, Jharkhand',
+                    'landmark': 'Near Plaza Chowk',
+                    'timings': '11:00 AM – 11:00 PM',
+                    'coordinates': '23.3441, 85.3096',
+                    'google_maps_url': 'https://maps.google.com/spice'
+                }
+            }
+        }
+        payload = update.build_restaurant_payload(test_config)
+        self.assertEqual(payload['name'], 'Spice Garden')
+        self.assertEqual(payload['whatsappNumber'], '9876543210')
+        self.assertEqual(payload['whatsappDisplay'], '+91 98765 43210')
+        self.assertEqual(payload['location']['city'], 'Ranchi')
+        self.assertEqual(payload['location']['address'], 'Main Road, Ranchi, Jharkhand')
+        self.assertEqual(len(payload['phones']), 2)
+        self.assertTrue(payload['phones'][0]['isWhatsApp'])
+        self.assertFalse(payload['phones'][1]['isWhatsApp'])
+
+    def test_write_restaurant_files_creates_files(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            site_dir = Path(temp_dir_str)
+            test_config = {
+                'restaurant': {
+                    'name': 'Spice Garden',
+                    'whatsapp_number': '9876543210',
+                    'other_contact_numbers': ['9123456780'],
+                    'location': {'city': 'Ranchi'}
+                }
+            }
+            update.write_restaurant_files(test_config, site_dir=site_dir)
+            js_file = site_dir / 'restaurant-data.js'
+            json_file = site_dir / 'restaurant.json'
+            self.assertTrue(js_file.is_file())
+            self.assertTrue(json_file.is_file())
+            self.assertIn('window.RESTAURANT_CONFIG', js_file.read_text(encoding='utf-8'))
+            self.assertIn('window.RESTAURANT_PHONES', js_file.read_text(encoding='utf-8'))
+            self.assertIn('window.RESTAURANT_LOCATION', js_file.read_text(encoding='utf-8'))
+            data = json.loads(json_file.read_text(encoding='utf-8'))
+            self.assertEqual(data['name'], 'Spice Garden')
+
 
 if __name__ == '__main__':
     unittest.main()

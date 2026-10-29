@@ -4,10 +4,6 @@ SCRIPT_DIR="${0:A:h}"
 ROOT_DIR="${SCRIPT_DIR:h}"
 cd -- "$ROOT_DIR" || exit 1
 
-printf '\n=========================================\n'
-printf '      Aashirwad Menu Updater             \n'
-printf '=========================================\n\n'
-
 if [[ -x ".venv/bin/python" ]]; then
   PYTHON=".venv/bin/python"
 elif [[ -x "bin/python" ]]; then
@@ -15,6 +11,12 @@ elif [[ -x "bin/python" ]]; then
 else
   PYTHON="python3"
 fi
+
+REST_NAME=$("$PYTHON" -c "import json; print(json.load(open('scripts/config.json')).get('restaurant', {}).get('name', 'Restaurant').title())" 2>/dev/null || echo "Restaurant")
+
+printf '\n=========================================\n'
+printf "      $REST_NAME Menu Updater             \n"
+printf '=========================================\n\n'
 
 "$PYTHON" "$SCRIPT_DIR/update.py" --deploy "$@"
 result_code=$?

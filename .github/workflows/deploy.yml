@@ -44,7 +44,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdir -p site/assets/sheet
-          git add site/menu.json site/menu-snapshot.js site/assets/sheet
+          git add site/menu.json site/menu-snapshot.js site/assets/sheet site/restaurant-data.js site/restaurant.json
           if ! git diff --cached --quiet; then
             git commit -m "Update menu from private sheet [skip ci]"
             git push origin HEAD:main

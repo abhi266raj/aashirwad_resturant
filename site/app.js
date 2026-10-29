@@ -59,8 +59,165 @@ function getCookie(name) {
   }
 }
 
+function getRestaurantConfig() {
+  if (window.RESTAURANT_CONFIG) return window.RESTAURANT_CONFIG;
+  return {
+    name: window.RESTAURANT_LOCATION?.name || "aashirwad",
+    tagline: "Authentic North Indian, Tandoori & Chinese family restaurant. Fresh food and free home delivery.",
+    whatsappNumber: "7004230188",
+    whatsappDisplay: "+91 70042 30188",
+    phones: window.RESTAURANT_PHONES || [
+      { number: "7004230188", display: "+91 70042 30188", isWhatsApp: true },
+      { number: "9334047955", display: "+91 93340 47955", isWhatsApp: false },
+      { number: "6207228264", display: "+91 62072 28264", isWhatsApp: false },
+      { number: "9931579212", display: "+91 99315 79212", isWhatsApp: false }
+    ],
+    location: window.RESTAURANT_LOCATION || {
+      city: "Hazaribagh",
+      address: "Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301",
+      landmark: "Near Bansilal Chowk",
+      timings: "10:30 AM – 10:30 PM (All 7 Days)",
+      coordinates: "23.9928812, 85.3616478",
+      googleMapsUrl: "https://maps.google.com"
+    }
+  };
+}
+
+function initRestaurantInfo() {
+  const cfg = getRestaurantConfig();
+  const name = cfg.name || 'Restaurant';
+  const city = cfg.location?.city || '';
+  const address = cfg.location?.address || '';
+  const timings = cfg.location?.timings || '';
+  const landmark = cfg.location?.landmark || '';
+  const mapsUrl = cfg.location?.googleMapsUrl || '';
+  const waDisplay = cfg.whatsappDisplay || cfg.whatsappNumber;
+
+  // 1. Title & Meta
+  document.title = `${name} - Home Delivery & Restaurant Menu`;
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) {
+    metaDesc.content = `Order food online from ${name}${city ? ` in ${city}` : ''}. Searchable menu, free home delivery, WhatsApp & SMS ordering to ${waDisplay}.`;
+  }
+
+  // 2. Brand name across all brand classes / IDs
+  document.querySelectorAll('.brand-restaurant-name').forEach(el => {
+    el.textContent = name;
+  });
+
+  // 3. Headings & Taglines
+  const aboutHeading = document.getElementById('about-restaurant-heading');
+  if (aboutHeading) aboutHeading.textContent = `Welcome to ${name}`;
+
+  const aboutTagline = document.getElementById('about-restaurant-tagline');
+  if (aboutTagline && cfg.tagline) {
+    aboutTagline.innerHTML = `${city ? `Located around ${landmark || city}, ` : ''}<strong class="brand-restaurant-name">${escapeHTML(name)}</strong> offers wholesome, authentic food and fresh preparations. All orders placed on our website enjoy complimentary home delivery${city ? ` across ${escapeHTML(city)}` : ''}.`;
+  }
+
+  const deliveryBadge = document.getElementById('hero-delivery-badge');
+  if (deliveryBadge) {
+    deliveryBadge.textContent = `Free Home Delivery${city ? ` in ${city}` : ''}`;
+  }
+
+  // 4. Location & Timings
+  const aboutAddress = document.getElementById('about-restaurant-address');
+  if (aboutAddress && address) aboutAddress.textContent = address;
+
+  const aboutTimings = document.getElementById('about-restaurant-timings');
+  if (aboutTimings && timings) aboutTimings.textContent = timings;
+
+  const aboutCoords = document.getElementById('about-restaurant-coordinates');
+  if (aboutCoords && cfg.location?.coordinates) aboutCoords.textContent = cfg.location.coordinates;
+
+  const aboutMaps = document.getElementById('about-maps-link');
+  if (aboutMaps && mapsUrl) aboutMaps.href = mapsUrl;
+
+  // 5. Address Modal & Drawer Address
+  const modalAddrLabel = document.getElementById('modal-address-label');
+  if (modalAddrLabel) {
+    modalAddrLabel.textContent = `Delivery Address & Landmark${city ? ` in ${city}` : ''}`;
+  }
+  const modalAddrInput = document.getElementById('modal-address');
+  if (modalAddrInput) {
+    modalAddrInput.placeholder = `e.g. Near ${landmark || 'Main Road'}${city ? `, ${city}` : ''}`;
+  }
+  const drawerAddr = document.getElementById('drawer-delivery-addr');
+  if (drawerAddr && (!state.delivery.address || state.delivery.address === 'Hazaribagh')) {
+    drawerAddr.textContent = city || 'Home Delivery';
+  }
+
+  // 6. Call Modal Heading
+  const callHeading = document.getElementById('call-modal-heading');
+  if (callHeading) callHeading.textContent = `Call ${name}`;
+
+  // 7. Order Action Buttons text
+  const waBtnText = document.getElementById('order-whatsapp-btn-text');
+  if (waBtnText) waBtnText.textContent = `Order via WhatsApp (${waDisplay})`;
+
+  const smsBtnText = document.getElementById('order-sms-btn-text');
+  if (smsBtnText) smsBtnText.textContent = `Send Order via SMS (${waDisplay})`;
+
+  // 8. Footer Elements
+  const footerName = document.getElementById('footer-restaurant-name');
+  if (footerName) footerName.textContent = name;
+
+  const footerTagline = document.getElementById('footer-restaurant-tagline');
+  if (footerTagline && cfg.tagline) footerTagline.textContent = cfg.tagline;
+
+  const footerAddress = document.getElementById('footer-restaurant-address');
+  if (footerAddress && address) footerAddress.textContent = address;
+
+  const footerTimings = document.getElementById('footer-restaurant-timings');
+  if (footerTimings && timings) footerTimings.textContent = timings;
+
+  const footerCopyright = document.getElementById('footer-copyright');
+  if (footerCopyright) footerCopyright.textContent = `© ${new Date().getFullYear()} ${name}. All rights reserved.`;
+
+  // 9. Contact numbers in Contact Section, Call Modal, and Footer
+  renderPhoneLists(cfg);
+}
+
+function renderPhoneLists(cfg) {
+  const phones = cfg.phones || [];
+  if (!phones.length) return;
+
+  const contactGrid = document.getElementById('contact-phones-grid');
+  if (contactGrid) {
+    contactGrid.innerHTML = phones.map(p => `
+      <div class="p-3.5 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between">
+        <span class="font-extrabold text-sm text-stone-900">${escapeHTML(p.display || p.number)}</span>
+        <div class="flex items-center gap-1">
+          <a href="tel:${p.number}" class="p-1.5 rounded-lg bg-stone-900 text-white text-xs font-bold">Call</a>
+          ${p.isWhatsApp ? `<a href="https://wa.me/91${p.number.replace(/\D/g,'').slice(-10)}" target="_blank" rel="noopener noreferrer" class="p-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">WhatsApp</a>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const modalList = document.getElementById('call-modal-phones-list');
+  if (modalList) {
+    modalList.innerHTML = phones.map(p => `
+      <div class="p-3 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between gap-2">
+        <span class="font-extrabold text-sm text-stone-900">${escapeHTML(p.display || p.number)}</span>
+        <div class="flex items-center gap-1.5">
+          <a href="tel:${p.number}" class="px-2.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition">Call</a>
+          ${p.isWhatsApp ? `<a href="https://wa.me/91${p.number.replace(/\D/g,'').slice(-10)}" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition">WhatsApp</a>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const footerList = document.getElementById('footer-phones-list');
+  if (footerList) {
+    footerList.innerHTML = phones.map(p => `
+      <li><a href="tel:${p.number}" class="hover:text-white">${escapeHTML(p.display || p.number)}</a></li>
+    `).join('');
+  }
+}
+
 // Initialize on Load (NO POPUP AT LAUNCH)
 document.addEventListener('DOMContentLoaded', async () => {
+  initRestaurantInfo();
   setupEventListeners();
   try { await loadMenuData(); } catch (error) {
     document.getElementById('menu-count-label').textContent = 'Menu unavailable';
@@ -567,14 +724,17 @@ function generateWhatsAppMessage() {
   const { items, totalAmount, count } = getCartTotals();
   if (count === 0) return null;
 
+  const cfg = getRestaurantConfig();
+  const restName = cfg.name || 'Restaurant';
+  const restLoc = cfg.location?.landmark || cfg.location?.city || '';
   const notes = document.getElementById('delivery-notes')?.value.trim() || state.delivery.notes;
-  const address = state.delivery.address || 'Hazaribagh';
+  const address = state.delivery.address || cfg.location?.city || 'Home Delivery';
   const name = state.delivery.name || '';
   const phone = state.delivery.phone || '';
 
   let msg = `🔔 *NEW HOME DELIVERY ORDER - PLEASE CONFIRM*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `*To:* aashirwad Restaurant (Bansilal Chowk)\n`;
+  msg += `*To:* ${restName}${restLoc ? ` (${restLoc})` : ''}\n`;
   msg += `*From Customer:* Please prepare and deliver this order:\n\n`;
   msg += `📍 *DELIVERY ADDRESS:* ${address}\n`;
   if (name) msg += `👤 *Customer Name:* ${name}\n`;
@@ -604,12 +764,14 @@ function generateSMSMessage() {
   const { items, totalAmount, count } = getCartTotals();
   if (count === 0) return null;
 
+  const cfg = getRestaurantConfig();
+  const restName = cfg.name || 'Restaurant';
   const notes = document.getElementById('delivery-notes')?.value.trim() || state.delivery.notes;
-  const address = state.delivery.address || 'Hazaribagh';
+  const address = state.delivery.address || cfg.location?.city || 'Home Delivery';
   const name = state.delivery.name || '';
   const phone = state.delivery.phone ? ` (${state.delivery.phone})` : '';
 
-  let sms = `[NEW ORDER - PLEASE CONFIRM - aashirwad]\n`;
+  let sms = `[NEW ORDER - PLEASE CONFIRM - ${restName}]\n`;
   sms += `Delivery To: ${address}\n`;
   if (name) sms += `Customer: ${name}${phone}\n`;
   if (notes) sms += `Instructions: ${notes}\n`;
@@ -644,22 +806,26 @@ function triggerCheckout(type = 'whatsapp') {
 
 // Dispatches order to WhatsApp or SMS
 function executeOrderDispatch(type = 'whatsapp') {
+  const cfg = getRestaurantConfig();
+  const rawWa = cfg.whatsappNumber || "7004230188";
+  const cleanDigits = rawWa.replace(/\D/g, '');
+  const waPhone = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
+  const smsPhone = cleanDigits.length === 10 ? cleanDigits : (cleanDigits.startsWith('91') ? cleanDigits.slice(2) : cleanDigits);
+
   if (type === 'whatsapp') {
     const message = generateWhatsAppMessage();
-    const phone = "917004230188";
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${waPhone}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
     showToast("Opening WhatsApp with your order & delivery address...");
   } else {
     const smsText = generateSMSMessage();
-    const phone = "7004230188";
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     const separator = isIOS ? '&' : '?';
-    const smsUrl = `sms:${phone}${separator}body=${encodeURIComponent(smsText)}`;
+    const smsUrl = `sms:${smsPhone}${separator}body=${encodeURIComponent(smsText)}`;
 
     copyOrderToClipboard(false);
     window.location.href = smsUrl;
-    showToast(`Opening SMS to 7004230188...`);
+    showToast(`Opening SMS to ${cfg.whatsappDisplay || smsPhone}...`);
   }
 }
 

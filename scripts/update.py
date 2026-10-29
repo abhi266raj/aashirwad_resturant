@@ -600,6 +600,99 @@ def write_menu_files(payload, output):
         temporary.replace(path)
 
 
+def format_phone_display(phone):
+    """Format 10-digit Indian phone number as +91 XXXXX XXXXX."""
+    digits = re.sub(r'\D', '', str(phone or ''))
+    if len(digits) == 10:
+        return f'+91 {digits[:5]} {digits[5:]}'
+    if len(digits) == 12 and digits.startswith('91'):
+        return f'+91 {digits[2:7]} {digits[7:]}'
+    return str(phone)
+
+
+def build_restaurant_payload(config):
+    """Extract restaurant brand, whatsapp, other contact phones, and location from config."""
+    rest = config.get('restaurant', {})
+    name = rest.get('name') or config.get('restaurant_name') or 'aashirwad'
+    tagline = rest.get('tagline') or rest.get('description') or 'Authentic food and fast home delivery.'
+    wa_num = rest.get('whatsapp_number') or rest.get('whatsapp') or '7004230188'
+    wa_clean = re.sub(r'\D', '', str(wa_num))
+    if len(wa_clean) == 12 and wa_clean.startswith('91'):
+        wa_clean = wa_clean[2:]
+    wa_display = rest.get('whatsapp_display') or format_phone_display(wa_clean)
+
+    loc = rest.get('location', {})
+    location = {
+        'city': loc.get('city') or 'Hazaribagh',
+        'address': loc.get('address') or 'Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301',
+        'landmark': loc.get('landmark') or 'Near Bansilal Chowk',
+        'timings': loc.get('timings') or '10:30 AM – 10:30 PM (All 7 Days)',
+        'coordinates': loc.get('coordinates') or '23.9928812, 85.3616478',
+        'googleMapsUrl': loc.get('google_maps_url') or loc.get('googleMapsUrl') or 'https://maps.google.com',
+    }
+
+    phones = []
+    if wa_clean:
+        phones.append({
+            'number': wa_clean,
+            'display': wa_display,
+            'isWhatsApp': True,
+        })
+
+    raw_contacts = rest.get('other_contact_numbers') or rest.get('contact_numbers') or []
+    for item in raw_contacts:
+        if isinstance(item, dict):
+            num = re.sub(r'\D', '', str(item.get('number', '')))
+            if len(num) == 12 and num.startswith('91'):
+                num = num[2:]
+            disp = item.get('display') or format_phone_display(num)
+            is_wa = bool(item.get('is_whatsapp', False) or item.get('isWhatsApp', False))
+        else:
+            num = re.sub(r'\D', '', str(item))
+            if len(num) == 12 and num.startswith('91'):
+                num = num[2:]
+            disp = format_phone_display(num)
+            is_wa = False
+        if num and num != wa_clean and not any(p['number'] == num for p in phones):
+            phones.append({
+                'number': num,
+                'display': disp,
+                'isWhatsApp': is_wa,
+            })
+
+    return {
+        'name': name,
+        'tagline': tagline,
+        'whatsappNumber': wa_clean,
+        'whatsappDisplay': wa_display,
+        'phones': phones,
+        'location': location,
+    }
+
+
+def write_restaurant_files(config, site_dir=SITE):
+    """Write restaurant metadata to site/restaurant-data.js and site/restaurant.json."""
+    site_dir = Path(site_dir)
+    site_dir.mkdir(parents=True, exist_ok=True)
+    payload = build_restaurant_payload(config)
+    js_content = (
+        '// Generated from scripts/config.json - Do not edit directly\n'
+        'window.RESTAURANT_CONFIG = ' + json.dumps(payload, ensure_ascii=False, indent=2) + ';\n\n'
+        '// Backward compatibility exports\n'
+        'window.RESTAURANT_PHONES = window.RESTAURANT_CONFIG.phones;\n'
+        'window.RESTAURANT_LOCATION = {\n'
+        '  name: window.RESTAURANT_CONFIG.name,\n'
+        '  address: window.RESTAURANT_CONFIG.location.address,\n'
+        '  city: window.RESTAURANT_CONFIG.location.city,\n'
+        '  timings: window.RESTAURANT_CONFIG.location.timings,\n'
+        '  coordinates: window.RESTAURANT_CONFIG.location.coordinates,\n'
+        '  googleMapsUrl: window.RESTAURANT_CONFIG.location.googleMapsUrl\n'
+        '};\n'
+    )
+    (site_dir / 'restaurant-data.js').write_text(js_content, encoding='utf-8')
+    (site_dir / 'restaurant.json').write_text(json.dumps(payload, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
+
+
 def deploy_to_github():
     """Commit any updated menu files and push to GitHub to trigger automatic deployment."""
     import subprocess
@@ -609,14 +702,18 @@ def deploy_to_github():
             print("Not inside a git repository; skipping automatic deployment.")
             return False
 
-        # Stage menu files
-        subprocess.run(['git', 'add', 'site/menu.json', 'site/menu-snapshot.js', 'site/assets/sheet'], check=False, cwd=str(ROOT))
+        # Stage menu and restaurant metadata files
+        subprocess.run(
+            ['git', 'add', 'site/menu.json', 'site/menu-snapshot.js', 'site/assets/sheet', 'site/restaurant-data.js', 'site/restaurant.json', 'scripts/config.json'],
+            check=False,
+            cwd=str(ROOT)
+        )
 
         # Check if changes are staged
         diff_proc = subprocess.run(['git', 'diff', '--cached', '--quiet'], cwd=str(ROOT))
         if diff_proc.returncode != 0:
             commit_proc = subprocess.run(
-                ['git', 'commit', '-m', 'Update menu from Google Sheet'],
+                ['git', 'commit', '-m', 'Update menu and restaurant configuration from config.json'],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -685,7 +782,9 @@ def main():
         rows = read_csv_rows(csv_path)
         payload = localize_images(normalize(rows), MENU_IMAGE_MAX_WIDTH, MENU_IMAGE_MAX_HEIGHT, MENU_IMAGE_QUALITY)
         write_menu_files(payload, args.output)
+        write_restaurant_files(config, SITE)
         print(f'Validated {len(payload["items"])} dishes and wrote {args.output}')
+        print(f'Updated restaurant configuration in site/restaurant-data.js')
 
         if args.deploy:
             deploy_to_github()
