@@ -91,6 +91,8 @@ def create_schema(sheet_url, tab='Menu', seed=False, name='aashirwad_resturant â
 
 
 def main():
+    from setup import ensure_runtime
+    ensure_runtime()
     config = load_config()
     parser = argparse.ArgumentParser()
     parser.add_argument('--sheet-url', default=default_sheet_url(), help='Google Sheet URL or ID; defaults to MENU_SHEET_URL')

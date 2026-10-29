@@ -1,63 +1,529 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#7b2e22">
-  <meta name="description" content="Explore Aashirwad's menu and order fresh food for home delivery in Hazaribagh.">
-  <title>Aashirwad Restaurant | Hazaribagh</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>aashirwad - Home Delivery & Restaurant Menu</title>
+
+  <meta name="description" content="Order food online from aashirwad in Hazaribagh. Searchable menu, free home delivery, WhatsApp & SMS ordering to 7004230188." />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/png" href="favicon.svg" />
+  <link rel="shortcut icon" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="favicon.svg" />
+
+  <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <script src="app.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            orange: {50:'#fcf3ef',100:'#f8e3da',200:'#edc4b2',300:'#dba18b',400:'#c67b62',500:'#a4513c',600:'#7b2e22',700:'#66271e',800:'#542017',900:'#431b15'},
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              600: '#ea580c',
+              700: '#c2410c',
+              800: '#9a3412',
+              900: '#7c2d12'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
-  <header class="site-header">
-    <div class="header-inner wrap">
-      <a class="brand" href="#top" aria-label="Aashirwad Restaurant home"><span class="brand-mark">आ</span><span><strong>Aashirwad</strong><small>RESTAURANT · HAZARIBAGH</small></span></a>
-      <nav class="desktop-nav" aria-label="Main navigation"><a href="#menu">Our menu</a><a href="#story">Our story</a><a href="#visit">Find us</a></nav>
-      <button class="header-order" id="header-cart" type="button" aria-label="Open your order">Your order <span id="header-count">0</span></button>
+<body class="bg-[#f8f3eb] text-stone-900 min-h-screen flex flex-col antialiased selection:bg-orange-500 selection:text-white">
+
+  <!-- Main Navigation Header -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+
+      <!-- Left: Brand Logo & Delivery Location -->
+      <div class="flex items-center gap-3 min-w-0">
+        <a href="#menu-area" class="flex items-center gap-2 flex-shrink-0">
+          <img src="favicon.svg" alt="" class="w-10 h-10 rounded-xl shadow-sm" />
+          <span class="font-extrabold text-xl sm:text-2xl tracking-tight text-stone-900 font-heading lowercase">aashirwad</span>
+        </a>
+
+        <!-- Permanent Cookie Location Button in Header -->
+        <button
+          id="header-location-btn"
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-stone-100 hover:bg-orange-50 border border-stone-200 text-xs transition min-w-0 cursor-pointer"
+          title="Click to set or change your delivery location">
+          <span class="text-orange-600">📍</span>
+          <span id="header-location-label" class="text-xs truncate font-medium text-stone-700">Set Delivery Location ▾</span>
+        </button>
+      </div>
+
+      <!-- Center / Right: Navigation Links -->
+      <nav class="hidden lg:flex items-center gap-6 text-xs font-bold text-stone-600">
+        <a href="#menu-area" class="hover:text-orange-600 transition">Menu & Order</a>
+        <a href="#about-section" class="hover:text-orange-600 transition">About Us</a>
+        <a href="#location-section" class="hover:text-orange-600 transition">Location & Address</a>
+        <a href="#contact-section" class="hover:text-orange-600 transition">Phone Numbers</a>
+      </nav>
+
+      <!-- Right: Call Us & Cart -->
+      <div class="flex items-center gap-2 flex-shrink-0">
+
+        <!-- Multi-Line Calling Options Button -->
+        <button
+          id="header-call-btn"
+          class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-stone-800 bg-stone-100 hover:bg-orange-50 border border-stone-200 transition cursor-pointer"
+          aria-label="Call Restaurant Numbers">
+          <svg class="w-3.5 h-3.5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+          <span class="hidden sm:inline">Call Us</span>
+        </button>
+
+        <!-- Cart Trigger -->
+        <button
+          id="nav-cart-btn"
+          class="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-3.5 rounded-xl shadow-sm transition cursor-pointer"
+          aria-label="View Order Cart">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+          <span class="text-xs sm:text-sm font-semibold">Cart</span>
+          <span id="nav-cart-count" class="bg-white text-orange-700 text-xs font-black px-1.5 py-0.5 rounded-full">0</span>
+          <span id="nav-cart-total" class="hidden sm:inline text-xs font-bold border-l border-white/20 pl-2">₹0</span>
+        </button>
+
+      </div>
+
     </div>
   </header>
 
-  <main id="top">
-    <section class="hero">
-      <div class="wrap hero-grid">
-        <div class="hero-copy">
-          <span class="eyebrow"><span class="eyebrow-line"></span> A LITTLE TASTE OF HOME</span>
-          <h1>Good food.<br><em>Good company.</em><br>Every day.</h1>
-          <p>From comforting curries to fresh tandoori breads, your favourite meals are made with care and delivered across Hazaribagh.</p>
-          <div class="hero-actions"><a href="#menu" class="button button-light">Explore the menu <span aria-hidden="true">↗</span></a><a href="#visit" class="text-link">Visit us <span aria-hidden="true">→</span></a></div>
-          <div class="hero-note"><span class="note-icon">✦</span><span>Freshly prepared · Free home delivery</span></div>
+  <!-- Main Order Container (Starts Directly with Searchable Items) -->
+  <main id="menu-area" class="max-w-6xl mx-auto px-4 py-4 sm:py-5 flex-1 w-full space-y-3.5">
+
+    <!-- Search & Filter Controls -->
+    <div class="bg-white rounded-2xl p-3.5 border border-stone-200/90 shadow-sm space-y-3">
+
+      <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+
+        <!-- Instant Search Box -->
+        <div class="relative w-full sm:max-w-md">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="Search dishes (e.g. Makhan Roti, Butter Chicken, Momos, Biryani)..."
+            class="w-full pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-stone-50/70"
+          />
         </div>
-        <div class="hero-visual"><div class="hero-photo"><img src="assets/menu/mv1.jpg" alt="Freshly prepared paneer curry" fetchpriority="high"></div><div class="photo-label"><span>FROM OUR KITCHEN</span><strong>Made with warmth.</strong></div><span class="hero-decoration" aria-hidden="true">✺</span></div>
+
+        <!-- Veg / Non-Veg Quick Toggles -->
+        <div class="flex items-center gap-1.5 w-full sm:w-auto">
+          <button class="diet-filter-btn px-3 py-1.5 rounded-lg text-xs font-bold border transition bg-stone-900 text-white border-stone-900 cursor-pointer" data-diet="all">
+            All Dishes
+          </button>
+          <button class="diet-filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold border border-stone-200 text-stone-700 bg-white hover:bg-stone-50 transition flex items-center gap-1 cursor-pointer" data-diet="veg">
+            <span class="food-badge veg"></span>
+            Pure Veg
+          </button>
+          <button class="diet-filter-btn px-2.5 py-1.5 rounded-lg text-xs font-bold border border-stone-200 text-stone-700 bg-white hover:bg-stone-50 transition flex items-center gap-1 cursor-pointer" data-diet="nonveg">
+            <span class="food-badge non-veg"></span>
+            Non-Veg
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="pt-2 border-t border-stone-100">
+        <div id="category-tabs" class="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+          <!-- Injected via app.js -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Active Count Indicator -->
+    <div class="flex items-center justify-between px-1 text-xs text-stone-500 font-semibold">
+      <span id="menu-count-label">Loading dishes...</span>
+      <span class="text-orange-700 font-bold">Free Home Delivery in Hazaribagh</span>
+    </div>
+
+    <!-- Searchable Menu Grid -->
+    <div id="menu-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 pb-12">
+      <!-- Injected via app.js with assets/veg/<dishname>/dish.png -->
+    </div>
+
+    <!-- About Us Section -->
+    <section id="about-section" class="pt-8 pb-10 border-t border-stone-200">
+      <div class="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 shadow-sm space-y-3">
+        <span class="text-[11px] font-bold text-orange-700 uppercase tracking-wider">About Us</span>
+        <h2 class="text-xl font-bold font-heading text-stone-900">Welcome to aashirwad</h2>
+        <p class="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-3xl">
+          Located around Bansilal Chowk in Hazaribagh, <strong>aashirwad</strong> offers wholesome, authentic North Indian, Tandoori, Mughlai, and Indo-Chinese food. We take pride in fresh preparations, clay-oven tandoori breads, rich gravies, steamed momos, and aromatic biryanis. All orders placed on our website enjoy complimentary home delivery across Hazaribagh.
+        </p>
       </div>
     </section>
 
-    <section class="menu-section" id="menu">
-      <div class="wrap">
-        <div class="section-heading"><div><span class="eyebrow eyebrow-dark">THE AASHIRWAD MENU</span><h2>Find your next favourite.</h2><p>Something delicious for every appetite.</p></div><div class="menu-count" id="menu-count" aria-live="polite">Loading menu…</div></div>
-        <div class="menu-controls"><label class="search-wrap"><span aria-hidden="true">⌕</span><span class="sr-only">Search dishes</span><input id="search" type="search" placeholder="Search for a dish…" autocomplete="off"></label><div class="diet-tabs" role="group" aria-label="Dietary preference"><button type="button" class="diet active" data-diet="all" aria-pressed="true">All</button><button type="button" class="diet" data-diet="veg" aria-pressed="false"><span class="diet-dot veg"></span>Veg</button><button type="button" class="diet" data-diet="non-veg" aria-pressed="false"><span class="diet-dot nonveg"></span>Non-Veg</button></div></div>
-        <div class="categories" id="categories" aria-label="Menu categories"></div>
-        <div class="menu-grid" id="menu-grid" aria-live="polite"><div class="loading-state">Preparing the menu…</div></div>
+    <!-- Location & Address Section -->
+    <section id="location-section" class="py-6 border-t border-stone-200">
+      <div class="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 shadow-sm space-y-4">
+        <span class="text-[11px] font-bold text-orange-700 uppercase tracking-wider">Location & Address</span>
+        <h2 class="text-xl font-bold font-heading text-stone-900">Restaurant Address & Timings</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm text-stone-700">
+          <div class="space-y-2">
+            <p><strong>Address:</strong> Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301</p>
+            <p><strong>Operating Hours:</strong> 10:30 AM – 10:30 PM (All 7 Days)</p>
+            <p><strong>GPS Coordinates:</strong> 23.9928812, 85.3616478</p>
+          </div>
+          <div>
+            <a
+              href="https://www.google.co.in/maps/place/Ashirwad+Restaurant/@23.9928812,85.3616478,17z/data=!4m6!3m5!1s0x39f49c1b13d3edcf:0xce0a5655f48c7786!8m2!3d23.9928812!4d85.3616478!16s%2Fg%2F11cs5jppyh"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-800 font-bold border border-orange-200 transition">
+              <span>📍 View on Google Maps</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="story-section" id="story"><div class="wrap story-grid"><div class="story-photos"><img class="story-img story-img-main" src="assets/menu/b4.jpg" alt="Fresh garlic naan"><img class="story-img story-img-small" src="assets/menu/mn2.jpg" alt="Butter chicken"></div><div class="story-copy"><span class="eyebrow eyebrow-dark">FOOD THAT FEELS LIKE HOME</span><h2>Gather around<br>the good stuff.</h2><p>At Aashirwad, we bring together North Indian favourites, tandoori breads, biryanis, momos and Indo-Chinese comfort food. Each dish is prepared for the simple joy of sharing a satisfying meal.</p><a href="#menu" class="button button-dark">Browse dishes <span aria-hidden="true">↗</span></a></div></div></section>
+    <!-- Phone Numbers List Section -->
+    <section id="contact-section" class="py-6 border-t border-stone-200">
+      <div class="bg-white rounded-2xl p-5 sm:p-6 border border-stone-200 shadow-sm space-y-4">
+        <span class="text-[11px] font-bold text-orange-700 uppercase tracking-wider">Contact</span>
+        <h2 class="text-xl font-bold font-heading text-stone-900">All Restaurant Phone Numbers</h2>
 
-    <section class="visit-section" id="visit"><div class="wrap visit-grid"><div><span class="eyebrow">COME SAY HELLO</span><h2>Your table is waiting.</h2><p>Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand 825301</p><div class="visit-hours">Open every day · 10:30 AM – 10:30 PM</div><div class="visit-actions"><a href="https://www.google.co.in/maps/place/Ashirwad+Restaurant/@23.9928812,85.3616478,17z" target="_blank" rel="noopener noreferrer">Get directions ↗</a><a href="tel:+917004230188">Call +91 70042 30188 ↗</a></div></div><div class="visit-card"><span>HOME DELIVERY</span><strong>Good food,<br>at your doorstep.</strong><p>Build your order here and send it directly to us on WhatsApp or SMS. We will confirm availability and timing.</p><button class="button button-light" id="visit-cart" type="button">Start an order <span aria-hidden="true">↗</span></button></div></div></section>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="p-3.5 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between">
+            <span class="font-extrabold text-sm text-stone-900">+91 70042 30188</span>
+            <div class="flex items-center gap-1">
+              <a href="tel:7004230188" class="p-1.5 rounded-lg bg-stone-900 text-white text-xs font-bold">Call</a>
+              <a href="https://wa.me/917004230188" target="_blank" rel="noopener noreferrer" class="p-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">WhatsApp</a>
+            </div>
+          </div>
+          <div class="p-3.5 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between">
+            <span class="font-extrabold text-sm text-stone-900">+91 93340 47955</span>
+            <a href="tel:9334047955" class="p-1.5 rounded-lg bg-stone-900 text-white text-xs font-bold">Call</a>
+          </div>
+          <div class="p-3.5 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between">
+            <span class="font-extrabold text-sm text-stone-900">+91 62072 28264</span>
+            <a href="tel:6207228264" class="p-1.5 rounded-lg bg-stone-900 text-white text-xs font-bold">Call</a>
+          </div>
+          <div class="p-3.5 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between">
+            <span class="font-extrabold text-sm text-stone-900">+91 99315 79212</span>
+            <a href="tel:9931579212" class="p-1.5 rounded-lg bg-stone-900 text-white text-xs font-bold">Call</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
-  <footer class="site-footer"><div class="wrap footer-inner"><div><a class="footer-brand" href="#top">Aashirwad</a><span>Food made with warmth in Hazaribagh.</span></div><div class="footer-links"><a href="#menu">Menu</a><a href="#story">Our story</a><a href="#visit">Visit</a><a href="tel:+917004230188">Call</a></div><small>© <span id="year"></span> Aashirwad Restaurant</small></div></footer>
+  <!-- Sticky Floating Order Bar (Bottom) -->
+  <button
+    id="floating-cart-btn"
+    class="floating-cart-btn hidden bg-orange-600 hover:bg-orange-700 text-white py-3 px-5 rounded-full flex items-center gap-3 text-xs sm:text-sm font-bold cursor-pointer"
+    aria-label="View Order and Total">
+    <div class="relative">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+      <span id="floating-cart-count" class="absolute -top-2 -right-2 bg-stone-900 text-white text-[10px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center border border-white">0</span>
+    </div>
+    <span>View Order & Deliver</span>
+    <span class="w-1 h-1 rounded-full bg-white/50"></span>
+    <span id="floating-cart-amount" class="text-white font-extrabold">₹0</span>
+  </button>
 
-  <button class="mobile-cart" id="mobile-cart" type="button" hidden><span>View your order</span><span id="mobile-cart-total">₹0</span></button>
-  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
-  <aside class="cart-drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title" hidden>
-    <div class="drawer-head"><div><span class="eyebrow eyebrow-dark">READY WHEN YOU ARE</span><h2 id="cart-title">Your order</h2></div><button class="icon-button" id="close-cart" type="button" aria-label="Close order">×</button></div>
-    <div class="drawer-body"><div id="cart-items"></div><div class="cart-empty" id="cart-empty">Your order is waiting for something delicious.<br><a href="#menu" id="empty-menu-link">Explore the menu →</a></div><div id="checkout-fields" hidden><div class="cart-total"><span>Expected total</span><strong id="cart-total">₹0</strong></div><p class="price-note">The restaurant will confirm your order and final availability.</p><form id="checkout-form"><label>Your name <input id="customer-name" name="name" autocomplete="name" required maxlength="80"></label><label>Phone number <input id="customer-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" pattern="[0-9+() -]{10,18}" required></label><label>Delivery address <textarea id="customer-address" name="address" autocomplete="street-address" required maxlength="300" rows="2"></textarea></label><label>Notes <span>(optional)</span><textarea id="customer-notes" name="notes" maxlength="300" rows="2" placeholder="Anything we should know?"></textarea></label><div class="checkout-actions"><button class="button button-whatsapp" type="submit" data-channel="whatsapp">Send on WhatsApp ↗</button><button class="button button-sms" type="submit" data-channel="sms">Send by SMS ↗</button></div></form></div></div>
+  <!-- Delivery Address Modal (Permanent Cookie Storage, Only on Checkout or Top Change) -->
+  <div id="address-modal" class="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🛵</span>
+          <h3 id="address-modal-title" class="font-extrabold text-stone-900 text-base font-heading">Confirm Delivery Address</h3>
+        </div>
+        <button id="close-address-modal-btn" class="p-1 text-stone-400 hover:text-stone-700 cursor-pointer" aria-label="Close">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="address-form" class="space-y-3">
+        <div>
+          <label for="modal-address" class="block text-xs font-bold text-stone-700 mb-1">Delivery Address & Landmark in Hazaribagh</label>
+          <input
+            type="text"
+            id="modal-address"
+            placeholder="e.g. Near Bansilal Chowk / Main Road, Hazaribagh"
+            class="w-full text-xs sm:text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-stone-50"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="modal-name" class="block text-xs font-bold text-stone-700 mb-1">Your Name</label>
+            <input
+              type="text"
+              id="modal-name"
+              placeholder="e.g. Rahul Kumar"
+              class="w-full text-xs sm:text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-stone-50"
+            />
+          </div>
+          <div>
+            <label for="modal-phone" class="block text-xs font-bold text-stone-700 mb-1">Mobile Number</label>
+            <input
+              type="tel"
+              id="modal-phone"
+              placeholder="e.g. 9876543210"
+              class="w-full text-xs sm:text-sm px-3 py-2 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-stone-50"
+            />
+          </div>
+        </div>
+
+        <div class="pt-2 flex flex-col gap-2">
+          <button
+            type="submit"
+            id="address-submit-btn"
+            class="w-full py-2.5 px-4 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs sm:text-sm transition cursor-pointer shadow-sm">
+            Save Address
+          </button>
+
+          <!-- Skip Button: ONLY visible during checkout/order flow -->
+          <button
+            type="button"
+            id="skip-address-btn"
+            style="display: none;"
+            class="w-full py-2 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs transition cursor-pointer hidden">
+            Skip Address & Continue to WhatsApp
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Multi-Line Calling Options Modal (Only List of Numbers) -->
+  <div id="call-modal" class="fixed inset-0 z-50 bg-stone-950/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-sm p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-stone-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📞</span>
+          <h3 class="font-extrabold text-stone-900 text-base font-heading">Call aashirwad</h3>
+        </div>
+        <button id="close-call-modal-btn" class="p-1 text-stone-400 hover:text-stone-700 cursor-pointer" aria-label="Close">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <p class="text-xs text-stone-500">Tap to call directly:</p>
+
+      <div class="space-y-2">
+        <div class="p-3 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between gap-2">
+          <span class="font-extrabold text-sm text-stone-900">+91 70042 30188</span>
+          <div class="flex items-center gap-1.5">
+            <a href="tel:7004230188" class="px-2.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition">Call</a>
+            <a href="https://wa.me/917004230188" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition">WhatsApp</a>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between gap-2">
+          <span class="font-extrabold text-sm text-stone-900">+91 93340 47955</span>
+          <a href="tel:9334047955" class="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition">Call</a>
+        </div>
+
+        <div class="p-3 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between gap-2">
+          <span class="font-extrabold text-sm text-stone-900">+91 62072 28264</span>
+          <a href="tel:6207228264" class="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition">Call</a>
+        </div>
+
+        <div class="p-3 rounded-xl border border-stone-200 bg-stone-50 flex items-center justify-between gap-2">
+          <span class="font-extrabold text-sm text-stone-900">+91 99315 79212</span>
+          <a href="tel:9931579212" class="px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition">Call</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Drawer Backdrop -->
+  <div id="cart-drawer-overlay" class="fixed inset-0 bg-stone-900/60 z-50 backdrop-blur-sm hidden opacity-0 transition-opacity"></div>
+
+  <!-- Home Delivery Order Drawer -->
+  <aside
+    id="cart-drawer"
+    class="cart-drawer fixed top-0 right-0 bottom-0 w-full sm:w-[440px] bg-white z-50 shadow-2xl flex flex-col transform translate-x-full border-l border-stone-200"
+    role="dialog"
+    aria-labelledby="drawer-title"
+    aria-modal="true">
+
+    <!-- Drawer Header -->
+    <div class="p-4 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+      <div>
+        <h3 id="drawer-title" class="font-extrabold text-stone-900 text-base font-heading">Your Order</h3>
+        <p id="cart-drawer-count" class="text-xs text-stone-500 font-medium">0 dishes selected</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="clear-cart-btn" class="text-xs text-red-600 hover:text-red-700 font-semibold px-2 py-1 rounded cursor-pointer">Clear</button>
+        <button id="close-drawer-btn" class="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg cursor-pointer" aria-label="Close">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Delivery Address Summary inside Drawer -->
+    <div class="px-4 py-2.5 bg-orange-50/70 border-b border-orange-100 flex items-center justify-between text-xs">
+      <div class="min-w-0 pr-2">
+        <span class="text-[10px] font-bold text-orange-700 uppercase block">Delivering To:</span>
+        <span id="drawer-delivery-addr" class="font-semibold text-stone-800 truncate block">Hazaribagh</span>
+      </div>
+      <button id="drawer-change-addr-btn" class="text-xs font-bold text-orange-700 underline flex-shrink-0 cursor-pointer">
+        Change
+      </button>
+    </div>
+
+    <!-- Drawer Body -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+      <!-- Empty State -->
+      <div id="cart-drawer-empty" class="text-center py-16 space-y-2">
+        <div class="text-4xl">🛵</div>
+        <h4 class="text-sm font-bold text-stone-800">Your order is empty</h4>
+        <p class="text-xs text-stone-500 max-w-xs mx-auto">Add your favorite dishes to calculate your total and dispatch your order.</p>
+      </div>
+
+      <!-- Itemized Dishes List -->
+      <div id="cart-drawer-items" class="divide-y divide-stone-100">
+        <!-- Injected via app.js -->
+      </div>
+
+      <!-- Special Notes Input -->
+      <div id="delivery-notes-box" class="pt-2 border-t border-stone-100 hidden">
+        <label for="delivery-notes" class="block text-[11px] font-bold text-stone-700 mb-1">Special Cooking Instructions (Optional)</label>
+        <input
+          type="text"
+          id="delivery-notes"
+          placeholder="e.g. Less spicy, extra salad, ring bell"
+          class="w-full text-xs p-2 rounded-xl border border-stone-200 focus:outline-none focus:ring-1 focus:ring-orange-500"
+        />
+      </div>
+
+    </div>
+
+    <!-- Drawer Footer: Expected Price Total & Dispatch Buttons -->
+    <div id="cart-drawer-summary" class="p-4 border-t border-stone-200 bg-stone-50 space-y-3 hidden">
+
+      <div class="space-y-1 text-xs">
+        <div class="flex justify-between text-stone-600">
+          <span>Subtotal:</span>
+          <span id="cart-drawer-subtotal" class="font-bold text-stone-900">₹0</span>
+        </div>
+        <div class="flex justify-between text-emerald-700 font-bold">
+          <span>Home Delivery:</span>
+          <span>FREE</span>
+        </div>
+        <div class="flex justify-between text-sm sm:text-base font-extrabold text-stone-900 pt-2 border-t border-stone-200">
+          <span>TOTAL EXPECTED PRICE:</span>
+          <span id="cart-drawer-grand-total" class="text-orange-700 text-base sm:text-lg">₹0</span>
+        </div>
+      </div>
+
+      <!-- WhatsApp Order Button -->
+      <button
+        id="order-whatsapp-btn"
+        class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow transition flex items-center justify-center gap-2 cursor-pointer">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+        <span>Order via WhatsApp (7004230188)</span>
+      </button>
+
+      <!-- SMS Button -->
+      <button
+        id="order-sms-btn"
+        class="w-full py-2.5 px-4 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-bold text-xs shadow transition flex items-center justify-center gap-1.5 cursor-pointer">
+        <svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        <span>Send Order via SMS (7004230188)</span>
+      </button>
+
+      <!-- Helpers -->
+      <div class="flex items-center gap-2 pt-0.5">
+        <button id="copy-order-btn" class="flex-1 py-1.5 text-[11px] font-semibold text-stone-700 bg-stone-200/80 hover:bg-stone-300 rounded-lg transition text-center cursor-pointer">
+          📋 Copy Order Text
+        </button>
+        <button id="drawer-call-btn" class="flex-1 py-1.5 text-[11px] font-semibold text-stone-700 bg-stone-200/80 hover:bg-stone-300 rounded-lg transition text-center cursor-pointer">
+          📞 Call Options
+        </button>
+      </div>
+
+    </div>
+
   </aside>
-  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Comprehensive Multi-Section Footer -->
+  <footer class="bg-stone-900 text-stone-400 text-xs py-10 border-t border-stone-800">
+    <div class="max-w-6xl mx-auto px-4 space-y-8">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-left">
+
+        <!-- Column 1: Restaurant Info -->
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-orange-600 text-white flex items-center justify-center font-bold text-sm">आ</div>
+            <span class="text-white font-extrabold text-base font-heading lowercase">aashirwad</span>
+          </div>
+          <p class="text-stone-400 leading-relaxed text-[11px]">
+            Authentic North Indian, Tandoori & Chinese family restaurant serving Hazaribagh. Fresh food and free home delivery.
+          </p>
+        </div>
+
+        <!-- Column 2: Quick Links -->
+        <div class="space-y-2">
+          <h4 class="text-stone-200 font-bold uppercase tracking-wider text-[11px]">Navigation</h4>
+          <ul class="space-y-1 text-[11px]">
+            <li><a href="#menu-area" class="hover:text-white transition">Menu & Ordering</a></li>
+            <li><a href="#about-section" class="hover:text-white transition">About Us</a></li>
+            <li><a href="#location-section" class="hover:text-white transition">Location & Address</a></li>
+            <li><a href="#contact-section" class="hover:text-white transition">Phone Numbers</a></li>
+          </ul>
+        </div>
+
+        <!-- Column 3: Location Details -->
+        <div class="space-y-2">
+          <h4 class="text-stone-200 font-bold uppercase tracking-wider text-[11px]">Address & Hours</h4>
+          <p class="text-[11px] text-stone-300">Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand 825301</p>
+          <p class="text-[11px] text-orange-400 font-semibold">10:30 AM – 10:30 PM (Daily)</p>
+        </div>
+
+        <!-- Column 4: Contact Numbers List -->
+        <div class="space-y-2">
+          <h4 class="text-stone-200 font-bold uppercase tracking-wider text-[11px]">Phone Numbers</h4>
+          <ul class="space-y-1 text-[11px] font-mono text-stone-300">
+            <li><a href="tel:7004230188" class="hover:text-white">+91 70042 30188</a></li>
+            <li><a href="tel:9334047955" class="hover:text-white">+91 93340 47955</a></li>
+            <li><a href="tel:6207228264" class="hover:text-white">+91 62072 28264</a></li>
+            <li><a href="tel:9931579212" class="hover:text-white">+91 99315 79212</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="pt-6 border-t border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-stone-500 text-center sm:text-left">
+        <p>© 2026 aashirwad. All rights reserved.</p>
+        <p>Hosted on GitHub Pages: <a href="https://abhi266raj.github.io/aashirwad_resturant/" class="text-stone-400 hover:text-white underline">https://abhi266raj.github.io/aashirwad_resturant/</a></p>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="restaurant-data.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>

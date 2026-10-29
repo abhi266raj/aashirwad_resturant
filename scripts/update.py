@@ -217,6 +217,8 @@ MENU_IMAGE_MAX_HEIGHT = 600
 MENU_IMAGE_QUALITY = 78
 
 def main():
+    from setup import ensure_runtime
+    ensure_runtime()
     config = load_config()
     parser = argparse.ArgumentParser()
     parser.add_argument('--csv', type=Path, help='local CSV for preview or verification')

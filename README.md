@@ -6,7 +6,7 @@ A separate static HTML, CSS and JavaScript restaurant website for Hazaribagh. Th
 
 Both Python scripts read `scripts/config.json`. Its `sheet` section holds the private spreadsheet URL, spreadsheet title and menu tab. Image dimensions are defined by the menu layout in the updater code. Credentials never belong in this file.
 
-## Two scripts
+## Scripts
 
 - `python3 scripts/create_schema.py`: run locally with Google edit access to configure the sheet's columns, strict dropdowns, validation, and formatting. It preserves existing dishes and IDs. Use `--seed` only for an empty menu. Use `--new --name "Menu name"` to create a spreadsheet; successful creation saves its URL in the shared configuration.
 - `python3 scripts/update.py`: reads the private sheet with read-only access, downloads supplied image URLs, resizes and compresses them, and updates the static files in `site/`. It never assigns or validates dish IDs.
@@ -15,7 +15,7 @@ Both accept `--sheet-url` and `--tab` overrides. `--csv data/menu-template.csv` 
 
 ## Authentication
 
-Install `requirements.txt`. For local setup, supply an authorized Google user credential through `GOOGLE_OAUTH_TOKEN_JSON`, or an Editor service account credential through `GOOGLE_SERVICE_ACCOUNT_JSON`. For creation in your personal Drive, use your own authorized user credential. These credentials must be provisioned once; the Google authentication library obtains and refreshes short-lived access tokens automatically.
+Run `python3 scripts/setup.py` once. Both functional scripts also invoke setup automatically if dependencies are missing. Setup creates a project `.venv`, verifies its packages, and reuses it on later runs. For local setup, supply an authorized Google user credential through `GOOGLE_OAUTH_TOKEN_JSON`, or an Editor service account credential through `GOOGLE_SERVICE_ACCOUNT_JSON`. For creation in your personal Drive, use your own authorized user credential. These credentials must be provisioned once; the Google authentication library obtains and refreshes short-lived access tokens automatically.
 
 For GitHub, share this sheet with a dedicated service account as **Viewer**, then store its JSON credential in the repository Actions secret `GOOGLE_SERVICE_ACCOUNT_JSON`. The sheet stays private. The updater uses only the Sheets read-only scope. No Apps Script is used.
 
