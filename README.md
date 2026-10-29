@@ -53,6 +53,6 @@ Double-click the root `index.html` or `site/index.html` for local viewing. The u
 
 Manual cleanup: run `python3 scripts/update.py --clear-unused-assets --dry-run` to preview, then `python3 scripts/update.py --clear-unused-assets` to remove unused images. It uses the saved menu and static site references, requires no Google credentials, and preserves referenced photos, logos and placeholders. Run an update first when the sheet has changed.
 
-On macOS, double-click **Update Menu.command** at the project root. It runs the updater from the correct directory, performs setup if needed, and keeps the Terminal window open to show success or an authentication error. The Python scripts are executable and can also be run as `./scripts/update.py`. Google credentials are still required for private-sheet updates.
+On macOS, double-click **scripts/Update Menu.command**. It runs the updater from the correct directory, performs setup if needed, and keeps the Terminal window open to show success or any error. The Python scripts are executable and can also be run as `./scripts/update.py`. Google credentials are still required for private-sheet updates.
 
 Local credentials and tokens are saved in the gitignored `.google-auth/` directory with restricted file permissions (`0o600`). Temporary CSV downloads used during update are stored in `temp/` and automatically cleaned up upon completion. GitHub never opens a browser; it requires the configured repository credential secret.

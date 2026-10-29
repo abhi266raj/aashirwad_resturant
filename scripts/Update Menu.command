@@ -1,6 +1,8 @@
 #!/bin/zsh
 # Double-click on macOS, or pass updater options from Terminal.
-cd -- "${0:A:h}" || exit 1
+SCRIPT_DIR="${0:A:h}"
+ROOT_DIR="${SCRIPT_DIR:h}"
+cd -- "$ROOT_DIR" || exit 1
 
 printf '\n=========================================\n'
 printf '      Aashirwad Menu Updater             \n'
@@ -14,7 +16,7 @@ else
   PYTHON="python3"
 fi
 
-"$PYTHON" scripts/update.py "$@"
+"$PYTHON" "$SCRIPT_DIR/update.py" "$@"
 result_code=$?
 
 if [[ $result_code -eq 0 ]]; then
@@ -30,4 +32,5 @@ if [[ -t 0 ]]; then
 fi
 
 exit $result_code
+
 
