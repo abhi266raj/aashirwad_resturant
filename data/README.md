@@ -1,0 +1,1 @@
+`menu-template.csv` is the starting menu for the private Google Sheet. The deployed website uses menu data generated from that sheet by GitHub Actions. See the root README for setup and editing instructions.

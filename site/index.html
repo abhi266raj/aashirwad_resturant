@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#7b2e22">
+  <meta name="description" content="Explore Aashirwad's menu and order fresh food for home delivery in Hazaribagh.">
+  <title>Aashirwad Restaurant | Hazaribagh</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner wrap">
+      <a class="brand" href="#top" aria-label="Aashirwad Restaurant home"><span class="brand-mark">आ</span><span><strong>Aashirwad</strong><small>RESTAURANT · HAZARIBAGH</small></span></a>
+      <nav class="desktop-nav" aria-label="Main navigation"><a href="#menu">Our menu</a><a href="#story">Our story</a><a href="#visit">Find us</a></nav>
+      <button class="header-order" id="header-cart" type="button" aria-label="Open your order">Your order <span id="header-count">0</span></button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow"><span class="eyebrow-line"></span> A LITTLE TASTE OF HOME</span>
+          <h1>Good food.<br><em>Good company.</em><br>Every day.</h1>
+          <p>From comforting curries to fresh tandoori breads, your favourite meals are made with care and delivered across Hazaribagh.</p>
+          <div class="hero-actions"><a href="#menu" class="button button-light">Explore the menu <span aria-hidden="true">↗</span></a><a href="#visit" class="text-link">Visit us <span aria-hidden="true">→</span></a></div>
+          <div class="hero-note"><span class="note-icon">✦</span><span>Freshly prepared · Free home delivery</span></div>
+        </div>
+        <div class="hero-visual"><div class="hero-photo"><img src="assets/menu/mv1.jpg" alt="Freshly prepared paneer curry" fetchpriority="high"></div><div class="photo-label"><span>FROM OUR KITCHEN</span><strong>Made with warmth.</strong></div><span class="hero-decoration" aria-hidden="true">✺</span></div>
+      </div>
+    </section>
+
+    <section class="menu-section" id="menu">
+      <div class="wrap">
+        <div class="section-heading"><div><span class="eyebrow eyebrow-dark">THE AASHIRWAD MENU</span><h2>Find your next favourite.</h2><p>Something delicious for every appetite.</p></div><div class="menu-count" id="menu-count" aria-live="polite">Loading menu…</div></div>
+        <div class="menu-controls"><label class="search-wrap"><span aria-hidden="true">⌕</span><span class="sr-only">Search dishes</span><input id="search" type="search" placeholder="Search for a dish…" autocomplete="off"></label><div class="diet-tabs" role="group" aria-label="Dietary preference"><button type="button" class="diet active" data-diet="all" aria-pressed="true">All</button><button type="button" class="diet" data-diet="veg" aria-pressed="false"><span class="diet-dot veg"></span>Veg</button><button type="button" class="diet" data-diet="non-veg" aria-pressed="false"><span class="diet-dot nonveg"></span>Non-Veg</button></div></div>
+        <div class="categories" id="categories" aria-label="Menu categories"></div>
+        <div class="menu-grid" id="menu-grid" aria-live="polite"><div class="loading-state">Preparing the menu…</div></div>
+      </div>
+    </section>
+
+    <section class="story-section" id="story"><div class="wrap story-grid"><div class="story-photos"><img class="story-img story-img-main" src="assets/menu/b4.jpg" alt="Fresh garlic naan"><img class="story-img story-img-small" src="assets/menu/mn2.jpg" alt="Butter chicken"></div><div class="story-copy"><span class="eyebrow eyebrow-dark">FOOD THAT FEELS LIKE HOME</span><h2>Gather around<br>the good stuff.</h2><p>At Aashirwad, we bring together North Indian favourites, tandoori breads, biryanis, momos and Indo-Chinese comfort food. Each dish is prepared for the simple joy of sharing a satisfying meal.</p><a href="#menu" class="button button-dark">Browse dishes <span aria-hidden="true">↗</span></a></div></div></section>
+
+    <section class="visit-section" id="visit"><div class="wrap visit-grid"><div><span class="eyebrow">COME SAY HELLO</span><h2>Your table is waiting.</h2><p>Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand 825301</p><div class="visit-hours">Open every day · 10:30 AM – 10:30 PM</div><div class="visit-actions"><a href="https://www.google.co.in/maps/place/Ashirwad+Restaurant/@23.9928812,85.3616478,17z" target="_blank" rel="noopener noreferrer">Get directions ↗</a><a href="tel:+917004230188">Call +91 70042 30188 ↗</a></div></div><div class="visit-card"><span>HOME DELIVERY</span><strong>Good food,<br>at your doorstep.</strong><p>Build your order here and send it directly to us on WhatsApp or SMS. We will confirm availability and timing.</p><button class="button button-light" id="visit-cart" type="button">Start an order <span aria-hidden="true">↗</span></button></div></div></section>
+  </main>
+
+  <footer class="site-footer"><div class="wrap footer-inner"><div><a class="footer-brand" href="#top">Aashirwad</a><span>Food made with warmth in Hazaribagh.</span></div><div class="footer-links"><a href="#menu">Menu</a><a href="#story">Our story</a><a href="#visit">Visit</a><a href="tel:+917004230188">Call</a></div><small>© <span id="year"></span> Aashirwad Restaurant</small></div></footer>
+
+  <button class="mobile-cart" id="mobile-cart" type="button" hidden><span>View your order</span><span id="mobile-cart-total">₹0</span></button>
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="cart-drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title" hidden>
+    <div class="drawer-head"><div><span class="eyebrow eyebrow-dark">READY WHEN YOU ARE</span><h2 id="cart-title">Your order</h2></div><button class="icon-button" id="close-cart" type="button" aria-label="Close order">×</button></div>
+    <div class="drawer-body"><div id="cart-items"></div><div class="cart-empty" id="cart-empty">Your order is waiting for something delicious.<br><a href="#menu" id="empty-menu-link">Explore the menu →</a></div><div id="checkout-fields" hidden><div class="cart-total"><span>Expected total</span><strong id="cart-total">₹0</strong></div><p class="price-note">The restaurant will confirm your order and final availability.</p><form id="checkout-form"><label>Your name <input id="customer-name" name="name" autocomplete="name" required maxlength="80"></label><label>Phone number <input id="customer-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" pattern="[0-9+() -]{10,18}" required></label><label>Delivery address <textarea id="customer-address" name="address" autocomplete="street-address" required maxlength="300" rows="2"></textarea></label><label>Notes <span>(optional)</span><textarea id="customer-notes" name="notes" maxlength="300" rows="2" placeholder="Anything we should know?"></textarea></label><div class="checkout-actions"><button class="button button-whatsapp" type="submit" data-channel="whatsapp">Send on WhatsApp ↗</button><button class="button button-sms" type="submit" data-channel="sms">Send by SMS ↗</button></div></form></div></div>
+  </aside>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
