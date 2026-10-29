@@ -4,7 +4,11 @@ A separate static HTML, CSS and JavaScript restaurant website for Hazaribagh. Th
 
 ## Shared configuration
 
-Both Python scripts read `scripts/config.json`. Its `sheet.url` is the private spreadsheet link, `sheet.name` is the worksheet/tab name (currently `Menu2`). Image dimensions are defined by the menu layout in the updater code. Credentials never belong in this file.
+Both Python scripts and the web app read `scripts/config.json`. It contains:
+- `restaurant`: Restaurant brand information, including `name`, `tagline`, `whatsapp_number`, `whatsapp_display`, `other_contact_numbers`, and `location` (`city`, `address`, `landmark`, `timings`, `coordinates`, `google_maps_url`). Any changes here automatically propagate to the website metadata and order dispatch templates.
+- `sheet.url` and `sheet.name`: Google Sheets spreadsheet URL and worksheet/tab name (e.g. `Menu2`).
+- `categories`: Menu category list used for schema validation and dropdowns.
+Credentials never belong in this file.
 
 ## Scripts
 
