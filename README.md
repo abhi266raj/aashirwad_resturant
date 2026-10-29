@@ -42,3 +42,5 @@ Blank sort priorities default to the highest existing explicit priority, without
 Double-click the root `index.html` or `site/index.html` for local viewing. The updater generates `menu-snapshot.js` alongside JSON for direct file access. Both local and hosted pages render the generated menu snapshot without runtime JSON requests. Styling still loads the existing Tailwind CDN and Google Fonts, so full styling requires internet access.
 
 Manual cleanup: run `python3 scripts/update.py --clear-unused-assets --dry-run` to preview, then `python3 scripts/update.py --clear-unused-assets` to remove unused images. It uses the saved menu and static site references, requires no Google credentials, and preserves referenced photos, logos and placeholders. Run an update first when the sheet has changed.
+
+On macOS, double-click **Update Menu.command** at the project root. It runs the updater from the correct directory, performs setup if needed, and keeps the Terminal window open to show success or an authentication error. The Python scripts are executable and can also be run as `./scripts/update.py`. Google credentials are still required for private-sheet updates.
