@@ -60,10 +60,10 @@ def check_auth_status():
         return True, 'Environment variable GOOGLE_OAUTH_TOKEN_JSON (OAuth Token)'
 
     candidates = [
+        AUTH_DIR / 'token.json',
         AUTH_DIR / 'credentials.json',
         AUTH_DIR / 'service-account.json',
         AUTH_DIR / 'service_account.json',
-        AUTH_DIR / 'token.json',
         AUTH_DIR / 'token-readonly.json',
         AUTH_DIR / 'token-editor.json',
         AUTH_DIR / 'client.json',
@@ -119,7 +119,10 @@ def configure_credentials(file_path):
         raise ValueError(f'Invalid JSON credentials file: {exc}') from exc
 
     AUTH_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
-    target = AUTH_DIR / 'credentials.json'
+    if data.get('type') == 'authorized_user' or 'refresh_token' in data:
+        target = AUTH_DIR / 'token.json'
+    else:
+        target = AUTH_DIR / 'credentials.json'
 
     temporary = target.with_suffix('.tmp')
     descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

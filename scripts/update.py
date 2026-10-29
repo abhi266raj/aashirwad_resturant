@@ -61,10 +61,10 @@ def spreadsheet_id(value):
 
 def find_local_credentials_path():
     candidates = [
+        AUTH_DIR / 'token.json',
         AUTH_DIR / 'credentials.json',
         AUTH_DIR / 'service-account.json',
         AUTH_DIR / 'service_account.json',
-        AUTH_DIR / 'token.json',
         AUTH_DIR / 'token-readonly.json',
         AUTH_DIR / 'token-editor.json',
         ROOT / 'credentials.json',
@@ -75,6 +75,17 @@ def find_local_credentials_path():
         if path.is_file():
             return path
     return None
+
+
+def save_user_token(creds, path=AUTH_DIR / 'token.json'):
+    """Permanently persist credentials to .google-auth/token.json with restricted permissions."""
+    if not hasattr(creds, 'to_json'):
+        return
+    AUTH_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
+    temp_file = path.with_suffix('.tmp')
+    temp_file.write_text(creds.to_json(), encoding='utf-8')
+    temp_file.replace(path)
+    path.chmod(0o600)
 
 
 def credentials_from_file(path, scopes):
@@ -98,9 +109,7 @@ def credentials_from_file(path, scopes):
             from google_auth_oauthlib.flow import InstalledAppFlow
             flow = InstalledAppFlow.from_client_config(data, scopes=scopes)
             creds = flow.run_local_server(host='localhost', port=0, open_browser=True, timeout_seconds=300)
-            AUTH_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
-            token_file.write_text(creds.to_json(), encoding='utf-8')
-            token_file.chmod(0o600)
+            save_user_token(creds, token_file)
             return creds
         except Exception as exc:
             raise RuntimeError(f'OAuth client sign-in failed: {exc}') from exc
@@ -108,6 +117,17 @@ def credentials_from_file(path, scopes):
 
 
 def find_credentials(scopes):
+    # 0. Saved permanent user token in .google-auth/token.json
+    token_file = AUTH_DIR / 'token.json'
+    if token_file.is_file():
+        try:
+            from google.oauth2.credentials import Credentials
+            creds = Credentials.from_authorized_user_file(str(token_file), scopes=scopes)
+            if creds and (creds.valid or creds.refresh_token):
+                return creds
+        except Exception:
+            pass
+
     # 1. Direct access token in shell environment
     shell_token = os.environ.get('GOOGLE_ACCESS_TOKEN', '').strip()
     if shell_token:
@@ -162,38 +182,44 @@ def find_credentials(scopes):
 
 
 def login_with_browser(scopes):
-    """Convenient, low-friction browser sign-in."""
+    """Convenient, low-friction browser sign-in with permanent token saving."""
     import shutil
     import subprocess
 
+    # 1. Prefer OAuth client credentials if present
+    candidates = [
+        AUTH_DIR / 'client.json',
+        AUTH_DIR / 'credentials.json',
+        ROOT / 'credentials.json',
+    ]
+    for client_file in candidates:
+        if client_file.is_file():
+            try:
+                data = json.loads(client_file.read_text(encoding='utf-8'))
+                if 'installed' in data or 'web' in data:
+                    print('\nOpening browser for Google sign-in via OAuth client...')
+                    from google_auth_oauthlib.flow import InstalledAppFlow
+                    flow = InstalledAppFlow.from_client_config(data, scopes=scopes)
+                    creds = flow.run_local_server(host='localhost', port=0, open_browser=True, timeout_seconds=300)
+                    save_user_token(creds)
+                    print('✓ OAuth browser login successful. Credentials saved permanently.\n')
+                    return creds
+            except Exception as exc:
+                print(f'OAuth browser login failed: {exc}')
+
+    # 2. Try gcloud browser sign-in if gcloud is installed
     if shutil.which('gcloud'):
         print('\nOpening browser for Google sign-in via gcloud...')
         try:
             result = subprocess.run(['gcloud', 'auth', 'login', '--enable-gdrive-access', '--update-adc'])
             if result.returncode == 0:
                 print('✓ Google authentication successful.\n')
-                return find_credentials(scopes)
-        except Exception as exc:
-            print(f'gcloud browser login failed: {exc}')
-
-    client_file = AUTH_DIR / 'client.json'
-    if not client_file.is_file():
-        client_file = AUTH_DIR / 'credentials.json'
-    if client_file.is_file():
-        try:
-            data = json.loads(client_file.read_text(encoding='utf-8'))
-            if 'installed' in data or 'web' in data:
-                from google_auth_oauthlib.flow import InstalledAppFlow
-                flow = InstalledAppFlow.from_client_config(data, scopes=scopes)
-                creds = flow.run_local_server(host='localhost', port=0, open_browser=True, timeout_seconds=300)
-                AUTH_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
-                token_file = AUTH_DIR / 'token.json'
-                token_file.write_text(creds.to_json(), encoding='utf-8')
-                token_file.chmod(0o600)
-                print('✓ OAuth browser login successful.\n')
+                creds = find_credentials(scopes)
+                if creds:
+                    save_user_token(creds)
                 return creds
         except Exception as exc:
-            print(f'OAuth browser login failed: {exc}')
+            print(f'gcloud browser login failed: {exc}')
 
     return None
 
@@ -220,12 +246,14 @@ def authorized_session(scopes, interactive=True):
         if os.environ.get('GITHUB_ACTIONS') == 'true' or os.environ.get('CI', '').lower() in ('true', '1'):
             raise RuntimeError('GitHub/CI requires GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_OAUTH_TOKEN_JSON')
         raise RuntimeError(
-            "Local authentication not configured. Run 'python3 scripts/setup.py --credentials <file.json>' "
-            "or place your credentials in .google-auth/credentials.json"
+            "Local authentication not configured. To authenticate without logging in every time:\n"
+            "  1. Run 'python3 scripts/setup.py --credentials <file.json>' with a Service Account key or OAuth token, or\n"
+            "  2. Place your credentials in .google-auth/credentials.json or .google-auth/token.json"
         )
-    if hasattr(creds, 'refresh') and getattr(creds, 'expired', False) and getattr(creds, 'refresh_token', None):
+    if hasattr(creds, 'refresh') and (not creds.valid or getattr(creds, 'expired', False)) and getattr(creds, 'refresh_token', None):
         try:
             creds.refresh(Request())
+            save_user_token(creds)
         except RefreshError as exc:
             raise RuntimeError(f'Credential refresh failed: {exc}') from exc
     return AuthorizedSession(creds)

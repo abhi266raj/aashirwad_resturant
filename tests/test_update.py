@@ -202,6 +202,59 @@ class MenuSyncTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'local credentials are not configured'):
                     update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=None, temp_dir=temp_dir)
 
+    def test_save_user_token_persists_and_restricts_permissions(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            auth_dir = Path(temp_dir_str) / '.google-auth'
+            token_path = auth_dir / 'token.json'
+            mock_creds = unittest.mock.Mock()
+            mock_creds.to_json.return_value = '{"token": "test-token", "refresh_token": "test-refresh"}'
+
+            with unittest.mock.patch.object(update, 'AUTH_DIR', auth_dir):
+                update.save_user_token(mock_creds, path=token_path)
+                self.assertTrue(token_path.is_file())
+                self.assertEqual(token_path.read_text(encoding='utf-8'), '{"token": "test-token", "refresh_token": "test-refresh"}')
+                mode = token_path.stat().st_mode & 0o777
+                self.assertEqual(mode, 0o600)
+
+    def test_find_credentials_reads_saved_token(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            auth_dir = Path(temp_dir_str) / '.google-auth'
+            auth_dir.mkdir(parents=True)
+            token_path = auth_dir / 'token.json'
+            token_path.write_text('{"token": "xyz", "refresh_token": "abc"}', encoding='utf-8')
+
+            mock_creds = unittest.mock.Mock(valid=True, refresh_token='abc')
+            with unittest.mock.patch.object(update, 'AUTH_DIR', auth_dir), \
+                 unittest.mock.patch('google.oauth2.credentials.Credentials.from_authorized_user_file', return_value=mock_creds):
+                found = update.find_credentials(['https://www.googleapis.com/auth/spreadsheets.readonly'])
+                self.assertEqual(found, mock_creds)
+
+    def test_authorized_session_refreshes_and_persists_token(self):
+        mock_creds = unittest.mock.Mock()
+        mock_creds.valid = False
+        mock_creds.expired = True
+        mock_creds.refresh_token = 'refresh-123'
+        mock_creds.to_json.return_value = '{"token": "refreshed-token", "refresh_token": "refresh-123"}'
+
+        with unittest.mock.patch.object(update, 'find_credentials', return_value=mock_creds), \
+             unittest.mock.patch.object(update, 'save_user_token') as mock_save, \
+             unittest.mock.patch('google.auth.transport.requests.AuthorizedSession') as mock_session_cls:
+            update.authorized_session(['https://www.googleapis.com/auth/spreadsheets.readonly'], interactive=False)
+            mock_creds.refresh.assert_called_once()
+            mock_save.assert_called_once_with(mock_creds)
+
+    def test_setup_configure_credentials_saves_user_token(self):
+        import setup
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            auth_dir = Path(temp_dir_str) / '.google-auth'
+            source_file = Path(temp_dir_str) / 'my-token.json'
+            source_file.write_text('{"type": "authorized_user", "refresh_token": "ref-xyz"}', encoding='utf-8')
+
+            with unittest.mock.patch.object(setup, 'AUTH_DIR', auth_dir):
+                target = setup.configure_credentials(source_file)
+                self.assertEqual(target, auth_dir / 'token.json')
+                self.assertTrue(target.is_file())
+
 
 if __name__ == '__main__':
     unittest.main()
