@@ -793,10 +793,8 @@ def main():
         rows = read_csv_rows(csv_path)
         payload = localize_images(normalize(rows), MENU_IMAGE_MAX_WIDTH, MENU_IMAGE_MAX_HEIGHT, MENU_IMAGE_QUALITY)
         sheet_categories = payload.get('categories', [])
-        if sheet_categories and sheet_categories != config.get('categories'):
-            config['categories'] = sheet_categories
-            save_config(config)
-            print(f"Dynamically updated categories in config.json: {', '.join(sheet_categories)}")
+        if sheet_categories:
+            print(f"Categories parsed from CSV: {', '.join(sheet_categories)}")
 
         write_menu_files(payload, args.output)
         write_restaurant_files(config, SITE)

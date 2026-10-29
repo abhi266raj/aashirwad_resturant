@@ -1,6 +1,6 @@
 // Generated from scripts/config.json - Do not edit directly
 window.RESTAURANT_CONFIG = {
-  "name": "aashirwad",
+  "name": "Aashirwad Restaurant",
   "tagline": "Authentic North Indian, Tandoori & Chinese family restaurant serving Hazaribagh. Fresh food and free home delivery.",
   "whatsappNumber": "7004230188",
   "whatsappDisplay": "+91 70042 30188",

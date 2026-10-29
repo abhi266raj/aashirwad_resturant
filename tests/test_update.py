@@ -355,6 +355,29 @@ class MenuSyncTests(unittest.TestCase):
         cats = update.extract_categories(rows)
         self.assertEqual(cats, ['Beverages', 'Snacks', 'Desserts'])
 
+    def test_categories_parsed_from_csv_rows_in_payload_without_config(self):
+        rows = [
+            {
+                'id': '1', 'name': 'Roti', 'category': 'Breads',
+                'price': '20', 'diet': 'veg', 'description': 'Fresh roti',
+                'popular': 'yes', 'image': '', 'sort_priority': '1'
+            },
+            {
+                'id': '2', 'name': 'Paneer Tikka', 'category': 'Starters',
+                'price': '150', 'diet': 'veg', 'description': 'Tandoori paneer',
+                'popular': 'no', 'image': '', 'sort_priority': '2'
+            },
+            {
+                'id': '3', 'name': 'Naan', 'category': 'Breads',
+                'price': '40', 'diet': 'veg', 'description': 'Butter naan',
+                'popular': 'no', 'image': '', 'sort_priority': '3'
+            }
+        ]
+        payload = normalize(rows)
+        self.assertIn('categories', payload)
+        self.assertEqual(payload['categories'], ['Breads', 'Starters'])
+        self.assertEqual(len(payload['items']), 3)
+
 
 if __name__ == '__main__':
     unittest.main()

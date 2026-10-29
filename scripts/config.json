@@ -1,6 +1,6 @@
 {
   "restaurant": {
-    "name": "aashirwad",
+    "name": "Aashirwad Restaurant",
     "tagline": "Authentic North Indian, Tandoori & Chinese family restaurant serving Hazaribagh. Fresh food and free home delivery.",
     "whatsapp_number": "7004230188",
     "whatsapp_display": "+91 70042 30188",
@@ -29,8 +29,5 @@
   "sheet": {
     "url": "https://docs.google.com/spreadsheets/d/1bQyKNGmJwIZf4rUSHgDXJNtpXkvbUaNmiN4i5izOePA/edit",
     "name": "Menu2"
-  },
-  "categories": [
-    "Roti & Naan"
-  ]
+  }
 }

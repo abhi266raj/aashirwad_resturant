@@ -112,8 +112,17 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
         except Exception:
             pass
 
-    configured_cats = config.get('categories') or []
-    categories = sheet_categories + [c for c in configured_cats if c not in sheet_categories]
+    categories = sheet_categories
+    if not categories:
+        template_csv = ROOT / 'data/menu-template.csv'
+        if template_csv.is_file():
+            try:
+                with template_csv.open(newline='', encoding='utf-8-sig') as handle:
+                    template_rows = list(csv.DictReader(handle))
+                from update import extract_categories
+                categories = extract_categories(template_rows)
+            except Exception:
+                pass
     if not categories:
         categories = [
             "Roti & Naan", "Veg Main Course", "Non-Veg Main Course", "Momos",
@@ -143,7 +152,7 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
         if values:
             set_values(session, base, tab, f'A2:I{len(values) + 1}', values)
     config['sheet'].update(url=sheet_url, name=tab)
-    config['categories'] = categories
+    config.pop('categories', None)
     save_config(config)
     print(f'Menu schema ready on {sheet_url} (tab: {tab}): {len(FIELDS)} columns, Veg/Non-Veg and Yes/No dropdowns')
 
