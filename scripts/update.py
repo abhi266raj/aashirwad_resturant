@@ -202,11 +202,6 @@ def localize_images(payload, max_width=900, max_height=900, quality=78):
         else:
             item['image'] = item['fallback_image']
         del item['image_url']
-    sheet_assets = SITE / 'assets/sheet'
-    if sheet_assets.exists():
-        for path in sheet_assets.glob('*.jpg'):
-            if path.stem not in active:
-                path.unlink()
     return payload
 
 
@@ -216,16 +211,58 @@ MENU_IMAGE_MAX_WIDTH = 800
 MENU_IMAGE_MAX_HEIGHT = 600
 MENU_IMAGE_QUALITY = 78
 
+def clear_unused_assets(dry_run=False):
+    """Remove only image assets absent from generated menu and site references."""
+    referenced = set()
+    image_extensions = {'.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.ico', '.avif'}
+    def keep(value):
+        if not isinstance(value, str) or value.startswith(('http:', 'https:', 'data:')):
+            return
+        path = (SITE / value.split('?', 1)[0].split('#', 1)[0]).resolve()
+        if path.is_relative_to(SITE.resolve()):
+            referenced.add(path)
+    def walk(value):
+        if isinstance(value, dict):
+            for nested in value.values(): walk(nested)
+        elif isinstance(value, list):
+            for nested in value: walk(nested)
+        elif isinstance(value, str): keep(value)
+    menu = SITE / 'menu.json'
+    if not menu.is_file():
+        raise ValueError('menu.json is required before clearing assets')
+    walk(json.loads(menu.read_text()))
+    for path in SITE.rglob('*'):
+        if path.suffix in {'.html', '.css', '.js'} and path.name != 'menu-snapshot.js':
+            for value in re.findall(r"[\"']([^\"'<>\s]+\.(?:jpg|jpeg|png|webp|gif|svg|ico|avif)(?:\?[^\"'<>\s]*)?)[\"']", path.read_text()):
+                keep(value)
+    candidates = list((SITE / 'assets').rglob('*')) + list(SITE.glob('*'))
+    removed = []
+    for path in candidates:
+        if path.is_file() and path.suffix.lower() in image_extensions and path.resolve() not in referenced:
+            removed.append(path.relative_to(SITE).as_posix())
+            if not dry_run: path.unlink()
+    for path in sorted((SITE / 'assets').rglob('*'), reverse=True):
+        if path.is_dir() and not any(path.iterdir()) and not dry_run: path.rmdir()
+    print(('Would remove' if dry_run else 'Removed') + f' {len(removed)} unused image assets')
+    for path in removed: print('  ' + path)
+    return removed
+
+
 def main():
-    from setup import ensure_runtime
-    ensure_runtime()
     config = load_config()
     parser = argparse.ArgumentParser()
     parser.add_argument('--csv', type=Path, help='local CSV for preview or verification')
     parser.add_argument('--sheet-url', default=default_sheet_url(), help='Google Sheet URL or ID; defaults to MENU_SHEET_URL')
     parser.add_argument('--tab', default=os.environ.get('MENU_SHEET_TAB', config['sheet']['menu_tab']), help='sheet tab name (default: Menu)')
     parser.add_argument('--output', type=Path, default=SITE / 'menu.json')
+    parser.add_argument('--clear-unused-assets', action='store_true', help='manually remove unused local image assets without reading Google Sheets')
+    parser.add_argument('--dry-run', action='store_true', help='preview asset cleanup without deleting files')
     args = parser.parse_args()
+    if args.clear_unused_assets:
+        clear_unused_assets(args.dry_run)
+        return
+    from setup import ensure_runtime
+    ensure_runtime()
     if args.csv:
         with args.csv.open(newline='', encoding='utf-8-sig') as handle:
             reader = csv.DictReader(handle)

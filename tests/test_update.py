@@ -1,9 +1,12 @@
 import csv
 import tempfile
 import unittest
+from unittest.mock import patch
+import json
 from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+import update
 from update import FIELDS, normalize
 
 
@@ -31,6 +34,24 @@ class MenuSyncTests(unittest.TestCase):
         rows[1]['sort_priority'] = ''
         rows[2]['sort_priority'] = ''
         self.assertEqual([item['sort_priority'] for item in normalize(rows)['items']], [100, 100, 100])
+
+    def test_cleanup_keeps_referenced_images(self):
+        with tempfile.TemporaryDirectory() as directory:
+            site = Path(directory)
+            (site / 'assets').mkdir()
+            for name in ['used.jpg', 'unused.jpg', 'placeholder.svg']:
+                (site / 'assets' / name).write_text('image')
+            (site / 'brand.svg').write_text('logo')
+            (site / 'index.html').write_text('<img src="brand.svg?v=2">')
+            (site / 'app.js').write_text("const fallback = 'assets/placeholder.svg';")
+            (site / 'menu.json').write_text(json.dumps({'items': [{'image': 'assets/used.jpg'}]}))
+            with patch.object(update, 'SITE', site):
+                self.assertEqual(update.clear_unused_assets(True), ['assets/unused.jpg'])
+                self.assertTrue((site / 'assets/unused.jpg').exists())
+                self.assertEqual(update.clear_unused_assets(), ['assets/unused.jpg'])
+            self.assertTrue((site / 'brand.svg').exists())
+            self.assertTrue((site / 'assets/used.jpg').exists())
+            self.assertTrue((site / 'assets/placeholder.svg').exists())
 
     def test_seed_and_added_dish(self):
         added = dict.fromkeys(FIELDS, '')
