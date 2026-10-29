@@ -129,8 +129,13 @@ def find_credentials(scopes):
     try:
         import google.auth
         creds, _ = google.auth.default(scopes=scopes)
-        if creds:
+        # Service accounts from ADC (e.g. metadata server or GCE) are valid
+        if creds and (getattr(creds, 'service_account_email', None) or hasattr(creds, 'signer')):
             return creds
+        # For authorized_user ADC (e.g. gcloud), verify it is explicitly authorized for the scopes
+        if creds and getattr(creds, 'scopes', None):
+            if all(s in creds.scopes for s in scopes):
+                return creds
     except Exception:
         pass
 

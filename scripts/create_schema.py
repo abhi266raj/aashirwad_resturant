@@ -54,13 +54,17 @@ def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
     try:
         metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
     except Exception as exc:
-        print(f"Spreadsheet {sheet_id} could not be opened ({exc}). Creating new spreadsheet...")
-        created = checked(session.post(API, json={'properties': {'title': tab}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))
-        sheet_url = created['spreadsheetUrl']
-        sheet_id = spreadsheet_id(sheet_url)
-        base = f'{API}/{quote(sheet_id, safe="")}'
-        metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
-        print('Created spreadsheet: ' + sheet_url)
+        status_code = getattr(getattr(exc, 'response', None), 'status_code', None)
+        if status_code == 404:
+            print(f"Spreadsheet {sheet_id} was not found (404). Creating new spreadsheet...")
+            created = checked(session.post(API, json={'properties': {'title': tab}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))
+            sheet_url = created['spreadsheetUrl']
+            sheet_id = spreadsheet_id(sheet_url)
+            base = f'{API}/{quote(sheet_id, safe="")}'
+            metadata = checked(session.get(base, params={'fields': 'sheets.properties'}, timeout=30))
+            print('Created spreadsheet: ' + sheet_url)
+        else:
+            raise
 
     matches = [sheet for sheet in metadata.get('sheets', []) if sheet.get('properties', {}).get('title') == tab]
     if matches:
