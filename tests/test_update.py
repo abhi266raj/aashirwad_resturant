@@ -110,6 +110,7 @@ class MenuSyncTests(unittest.TestCase):
             mock_resp.status_code = 200
             # Return valid CSV header and row
             mock_resp.text = ','.join(FIELDS) + '\n1,Makhan Roti,Roti & Naan,20,Veg,Hot roti,No,,1\n'
+            mock_resp.json.return_value = {'sheets': [{'properties': {'title': 'Menu2', 'sheetId': 0}}]}
             mock_session.get.return_value = mock_resp
 
             csv_file = update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=mock_session, temp_dir=temp_dir)
@@ -130,12 +131,16 @@ class MenuSyncTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir_str:
             temp_dir = Path(temp_dir_str) / 'temp_sub'
             mock_session = unittest.mock.Mock()
+            meta_ok = unittest.mock.Mock(
+                status_code=200,
+                json=lambda: {'sheets': [{'properties': {'title': 'Menu2', 'sheetId': 10}}]}
+            )
             export_fail = unittest.mock.Mock(status_code=403, text='Forbidden')
             api_success = unittest.mock.Mock(
                 status_code=200,
                 json=lambda: {'values': [FIELDS, ['1', 'Makhan Roti', 'Roti & Naan', '20', 'Veg', 'Hot roti', 'No', '', '1']]}
             )
-            mock_session.get.side_effect = [export_fail, export_fail, api_success]
+            mock_session.get.side_effect = [meta_ok, export_fail, export_fail, export_fail, api_success]
 
             csv_file = update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=mock_session, temp_dir=temp_dir)
             self.assertTrue(csv_file.is_file())
@@ -158,16 +163,36 @@ class MenuSyncTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir_str:
             temp_dir = Path(temp_dir_str) / 'temp_sub'
             mock_session = unittest.mock.Mock()
+            meta_ok = unittest.mock.Mock(
+                status_code=200,
+                json=lambda: {'sheets': [{'properties': {'title': 'Menu2', 'sheetId': 10}}]}
+            )
             export_fail = unittest.mock.Mock(status_code=403, text='Forbidden')
             api_fail = unittest.mock.Mock(status_code=403)
             import requests
             api_fail.raise_for_status.side_effect = requests.exceptions.HTTPError('403 Forbidden')
-            mock_session.get.side_effect = [export_fail, export_fail, api_fail]
+            mock_session.get.side_effect = [meta_ok, export_fail, export_fail, export_fail, api_fail]
 
             with self.assertRaises(requests.exceptions.HTTPError):
                 update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=mock_session, temp_dir=temp_dir)
             # Ensure no corrupted CSV was left
             self.assertFalse(any(temp_dir.glob('*.csv')))
+
+    def test_download_sheet_csv_fails_when_tab_name_empty(self):
+        with self.assertRaisesRegex(ValueError, 'Sheet tab name is required'):
+            update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', '   ')
+
+    def test_download_sheet_csv_fails_when_tab_not_found_in_metadata(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str) / 'temp_sub'
+            mock_session = unittest.mock.Mock()
+            meta_resp = unittest.mock.Mock(
+                status_code=200,
+                json=lambda: {'sheets': [{'properties': {'title': 'Menu', 'sheetId': 0}}]}
+            )
+            mock_session.get.return_value = meta_resp
+            with self.assertRaisesRegex(ValueError, "Sheet tab 'Menu2' was not found.*Available tabs: 'Menu'"):
+                update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=mock_session, temp_dir=temp_dir)
 
     def test_download_sheet_csv_fails_when_unauthenticated_and_private(self):
         with tempfile.TemporaryDirectory() as temp_dir_str:

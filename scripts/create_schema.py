@@ -41,7 +41,9 @@ def set_values(session, base, tab, cells, values):
 def create_schema(sheet_url=None, tab=None, seed=False, create_new=False):
     config = load_config()
     sheet_url = sheet_url if sheet_url is not None else config['sheet']['url']
-    tab = tab if tab is not None else config['sheet']['name']
+    tab = (tab if tab is not None else config['sheet']['name'] or '').strip()
+    if not tab:
+        raise ValueError("Sheet tab name is required and cannot be empty. Specify --sheet-name or set sheet.name in scripts/config.json.")
     session = authorized_session(['https://www.googleapis.com/auth/spreadsheets'])
     if create_new or not sheet_url:
         created = checked(session.post(API, json={'properties': {'title': tab}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))

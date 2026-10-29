@@ -187,16 +187,48 @@ def clean_temp_files(file_path=None, temp_dir=TEMP_DIR):
 def download_sheet_csv(sheet_url, tab, session=None, temp_dir=TEMP_DIR):
     """Download Google Sheet data as a CSV file in a temporary folder."""
     import requests
+    tab = (tab or '').strip()
+    if not tab:
+        raise ValueError("Sheet tab name is required and cannot be empty. Specify --sheet-name or set sheet.name in scripts/config.json.")
+
     temp_dir = Path(temp_dir)
     temp_dir.mkdir(parents=True, exist_ok=True)
     slug = re.sub(r'[^a-zA-Z0-9_-]+', '_', tab).strip('_') or 'data'
     target_path = temp_dir / f"menu_{slug}_{int(time.time() * 1000)}.csv"
     sheet_id = spreadsheet_id(sheet_url)
 
-    export_urls = [
-        f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&sheet={urllib.parse.quote(tab)}",
+    # 1. When session is provided, check sheet metadata to confirm tab existence
+    sheet_gid = None
+    if session is not None:
+        meta_url = (
+            'https://sheets.googleapis.com/v4/spreadsheets/'
+            + urllib.parse.quote(sheet_id, safe='')
+            + '?fields=sheets.properties(sheetId,title)'
+        )
+        try:
+            meta_resp = session.get(meta_url, timeout=30)
+            if meta_resp.status_code == 200:
+                sheets_info = meta_resp.json().get('sheets', [])
+                tab_map = {
+                    s.get('properties', {}).get('title'): s.get('properties', {}).get('sheetId')
+                    for s in sheets_info if s.get('properties', {}).get('title')
+                }
+                if tab not in tab_map:
+                    available = ', '.join(repr(t) for t in tab_map.keys()) if tab_map else 'none'
+                    raise ValueError(f"Sheet tab {tab!r} was not found in spreadsheet {sheet_id!r}. Available tabs: {available}.")
+                sheet_gid = tab_map[tab]
+        except ValueError:
+            raise
+        except Exception:
+            pass
+
+    export_urls = []
+    if sheet_gid is not None:
+        export_urls.append(f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={sheet_gid}")
+    export_urls.extend([
         f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={urllib.parse.quote(tab)}",
-    ]
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&sheet={urllib.parse.quote(tab)}",
+    ])
 
     requester = session if session is not None else requests.Session()
     csv_written = False
@@ -206,11 +238,15 @@ def download_sheet_csv(sheet_url, tab, session=None, temp_dir=TEMP_DIR):
             resp = requester.get(url, timeout=30, allow_redirects=True)
             if resp.status_code == 200:
                 text = resp.text
+                if 'Table does not exist' in text or 'INVALID_ARGUMENT' in text:
+                    raise ValueError(f"Sheet tab {tab!r} does not exist in the spreadsheet.")
                 first_line = text.splitlines()[0] if text.splitlines() else ''
                 if any(f in first_line for f in ('id', 'name', 'category', 'price')) and '<html' not in text[:200].lower():
                     target_path.write_text(text, encoding='utf-8')
                     csv_written = True
                     break
+        except ValueError:
+            raise
         except Exception:
             pass
 
@@ -228,11 +264,11 @@ def download_sheet_csv(sheet_url, tab, session=None, temp_dir=TEMP_DIR):
         )
         resp = session.get(api_url, timeout=30)
         if resp.status_code == 400:
-            raise ValueError(f"Sheet tab {tab!r} was not found or could not be read; run create_schema.py to configure it")
+            raise ValueError(f"Sheet tab {tab!r} was not found in spreadsheet {sheet_id!r} or could not be read; run create_schema.py to configure it")
         resp.raise_for_status()
         values = resp.json().get('values', [])
         if not values:
-            raise ValueError('sheet is empty')
+            raise ValueError(f"Sheet tab {tab!r} is empty")
         with target_path.open('w', newline='', encoding='utf-8') as handle:
             writer = csv.writer(handle)
             for row in values:
