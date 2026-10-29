@@ -77,7 +77,6 @@ function getRestaurantConfig() {
       address: "Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301",
       landmark: "Near Bansilal Chowk",
       timings: "10:30 AM – 10:30 PM (All 7 Days)",
-      coordinates: "23.9928812, 85.3616478",
       googleMapsUrl: "https://maps.google.com"
     }
   };
@@ -125,9 +124,6 @@ function initRestaurantInfo() {
 
   const aboutTimings = document.getElementById('about-restaurant-timings');
   if (aboutTimings && timings) aboutTimings.textContent = timings;
-
-  const aboutCoords = document.getElementById('about-restaurant-coordinates');
-  if (aboutCoords && cfg.location?.coordinates) aboutCoords.textContent = cfg.location.coordinates;
 
   const aboutMaps = document.getElementById('about-maps-link');
   if (aboutMaps && mapsUrl) aboutMaps.href = mapsUrl;

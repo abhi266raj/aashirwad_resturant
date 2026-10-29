@@ -31,7 +31,6 @@ window.RESTAURANT_CONFIG = {
     "address": "Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301",
     "landmark": "Near Bansilal Chowk",
     "timings": "10:30 AM – 10:30 PM (All 7 Days)",
-    "coordinates": "23.9928812, 85.3616478",
     "googleMapsUrl": "https://www.google.co.in/maps/place/Ashirwad+Restaurant/@23.9928812,85.3616478,17z/data=!4m6!3m5!1s0x39f49c1b13d3edcf:0xce0a5655f48c7786!8m2!3d23.9928812!4d85.3616478!16s%2Fg%2F11cs5jppyh"
   }
 };
@@ -43,6 +42,5 @@ window.RESTAURANT_LOCATION = {
   address: window.RESTAURANT_CONFIG.location.address,
   city: window.RESTAURANT_CONFIG.location.city,
   timings: window.RESTAURANT_CONFIG.location.timings,
-  coordinates: window.RESTAURANT_CONFIG.location.coordinates,
   googleMapsUrl: window.RESTAURANT_CONFIG.location.googleMapsUrl
 };

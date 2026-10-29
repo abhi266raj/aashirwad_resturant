@@ -627,7 +627,6 @@ def build_restaurant_payload(config):
         'address': loc.get('address') or 'Near Bansilal Chowk / Kani Bazar Chowk, Munka Bagicha, Hazaribagh, Jharkhand - 825301',
         'landmark': loc.get('landmark') or 'Near Bansilal Chowk',
         'timings': loc.get('timings') or '10:30 AM – 10:30 PM (All 7 Days)',
-        'coordinates': loc.get('coordinates') or '23.9928812, 85.3616478',
         'googleMapsUrl': loc.get('google_maps_url') or loc.get('googleMapsUrl') or 'https://maps.google.com',
     }
 
@@ -685,7 +684,6 @@ def write_restaurant_files(config, site_dir=SITE):
         '  address: window.RESTAURANT_CONFIG.location.address,\n'
         '  city: window.RESTAURANT_CONFIG.location.city,\n'
         '  timings: window.RESTAURANT_CONFIG.location.timings,\n'
-        '  coordinates: window.RESTAURANT_CONFIG.location.coordinates,\n'
         '  googleMapsUrl: window.RESTAURANT_CONFIG.location.googleMapsUrl\n'
         '};\n'
     )

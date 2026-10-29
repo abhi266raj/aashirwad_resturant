@@ -309,7 +309,6 @@ class MenuSyncTests(unittest.TestCase):
                     'address': 'Main Road, Ranchi, Jharkhand',
                     'landmark': 'Near Plaza Chowk',
                     'timings': '11:00 AM – 11:00 PM',
-                    'coordinates': '23.3441, 85.3096',
                     'google_maps_url': 'https://maps.google.com/spice'
                 }
             }
