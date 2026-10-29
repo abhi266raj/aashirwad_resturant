@@ -108,31 +108,50 @@ def credentials_from_file(path, scopes):
 
 
 def find_credentials(scopes):
-    user_token = os.environ.get('GOOGLE_OAUTH_TOKEN_JSON', '').strip()
-    if user_token:
+    # 1. Direct access token in shell environment
+    shell_token = os.environ.get('GOOGLE_ACCESS_TOKEN', '').strip()
+    if shell_token:
         from google.oauth2.credentials import Credentials
-        return Credentials.from_authorized_user_info(json.loads(user_token), scopes=scopes)
+        return Credentials(token=shell_token, scopes=scopes)
 
+    # 2. Service account JSON in shell environment
     service_account_env = os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON', '').strip()
     if service_account_env:
         from google.oauth2 import service_account
         return service_account.Credentials.from_service_account_info(json.loads(service_account_env), scopes=scopes)
 
+    # 3. Credentials file path in shell environment
     app_creds_env = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', '').strip()
     if app_creds_env and Path(app_creds_env).is_file():
         return credentials_from_file(Path(app_creds_env), scopes)
 
+    # 4. User token JSON in shell environment
+    user_token = os.environ.get('GOOGLE_OAUTH_TOKEN_JSON', '').strip()
+    if user_token:
+        from google.oauth2.credentials import Credentials
+        return Credentials.from_authorized_user_info(json.loads(user_token), scopes=scopes)
+
+    # 5. Local credential files in project
     local_file = find_local_credentials_path()
     if local_file:
         return credentials_from_file(local_file, scopes)
 
+    # 6. Active gcloud credentials from shell
+    try:
+        import subprocess
+        proc = subprocess.run(['gcloud', 'auth', 'print-access-token'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        if proc.returncode == 0 and proc.stdout.strip():
+            from google.oauth2.credentials import Credentials
+            return Credentials(token=proc.stdout.strip(), scopes=scopes)
+    except Exception:
+        pass
+
+    # 7. Application Default Credentials (ADC)
     try:
         import google.auth
         creds, _ = google.auth.default(scopes=scopes)
-        # Service accounts from ADC (e.g. metadata server or GCE) are valid
         if creds and (getattr(creds, 'service_account_email', None) or hasattr(creds, 'signer')):
             return creds
-        # For authorized_user ADC (e.g. gcloud), verify it is explicitly authorized for the scopes
         if creds and getattr(creds, 'scopes', None):
             if all(s in creds.scopes for s in scopes):
                 return creds
@@ -528,10 +547,31 @@ def main():
             print('Cleaned up temporary CSV files.')
 
 
+def format_google_error(exc):
+    if hasattr(exc, 'response') and exc.response is not None:
+        try:
+            data = exc.response.json()
+            error = data.get('error', {})
+            details = error.get('details', [])
+            reason = details[0].get('reason') if details else ''
+            if reason == 'ACCESS_TOKEN_SCOPE_INSUFFICIENT' or 'insufficient' in error.get('message', '').lower():
+                return (
+                    "Your active shell gcloud login lacks Google Drive/Sheets scope.\n"
+                    "-> Run this command in your shell to authorize Sheets access:\n"
+                    "     gcloud auth login --enable-gdrive-access --update-adc\n"
+                    "   (Or place a Service Account key at .google-auth/credentials.json)"
+                )
+            if error.get('message'):
+                return error['message']
+        except Exception:
+            pass
+    return str(exc)
+
+
 if __name__ == '__main__':
     try:
         main()
     except Exception as exc:
-        print(f'Menu sync failed: {exc}', file=sys.stderr)
+        print(f'Menu sync failed: {format_google_error(exc)}', file=sys.stderr)
         sys.exit(1)
 

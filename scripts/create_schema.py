@@ -123,9 +123,30 @@ def main():
     create_schema(args.sheet_url, args.tab, args.seed, args.new)
 
 
+def format_google_error(exc):
+    if hasattr(exc, 'response') and exc.response is not None:
+        try:
+            data = exc.response.json()
+            error = data.get('error', {})
+            details = error.get('details', [])
+            reason = details[0].get('reason') if details else ''
+            if reason == 'ACCESS_TOKEN_SCOPE_INSUFFICIENT' or 'insufficient' in error.get('message', '').lower():
+                return (
+                    "Your active shell gcloud login lacks Google Drive/Sheets scope.\n"
+                    "-> Run this command in your shell to authorize Sheets access:\n"
+                    "     gcloud auth login --enable-gdrive-access --update-adc\n"
+                    "   (Or place a Service Account key at .google-auth/credentials.json)"
+                )
+            if error.get('message'):
+                return error['message']
+        except Exception:
+            pass
+    return str(exc)
+
+
 if __name__ == '__main__':
     try:
         main()
     except Exception as exc:
-        print(f'Schema creation failed: {exc}', file=sys.stderr)
+        print(f'Schema creation failed: {format_google_error(exc)}', file=sys.stderr)
         sys.exit(1)

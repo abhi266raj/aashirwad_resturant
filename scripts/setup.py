@@ -49,6 +49,8 @@ def ensure_runtime():
 
 def check_auth_status():
     """Detect configured Google credentials and return (is_configured, description)."""
+    if os.environ.get('GOOGLE_ACCESS_TOKEN'):
+        return True, 'Environment variable GOOGLE_ACCESS_TOKEN (from shell)'
     if os.environ.get('GOOGLE_SERVICE_ACCOUNT_JSON'):
         return True, 'Environment variable GOOGLE_SERVICE_ACCOUNT_JSON (Service Account)'
     if os.environ.get('GOOGLE_APPLICATION_CREDENTIALS'):
@@ -84,6 +86,15 @@ def check_auth_status():
                 return True, f'Local credentials file ({path.name})'
             except Exception:
                 pass
+
+    try:
+        proc = subprocess.run(['gcloud', 'auth', 'print-access-token'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        if proc.returncode == 0 and proc.stdout.strip():
+            acc_proc = subprocess.run(['gcloud', 'config', 'get-value', 'account'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+            account = acc_proc.stdout.strip() if acc_proc.returncode == 0 else 'active'
+            return True, f'Shell gcloud active account ({account})'
+    except Exception:
+        pass
 
     try:
         import google.auth
