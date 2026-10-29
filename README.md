@@ -39,4 +39,4 @@ Duplicate sort prioritys are allowed. The display sorts by sort priority and kee
 
 Blank sort priorities default to the highest existing explicit priority, without incrementing it. Equal priorities follow sheet row order. These defaults are generated without writing to the sheet.
 
-Double-click the root `index.html` or `site/index.html` for local viewing. The updater generates `menu-snapshot.js` alongside JSON for direct file access. The hosted site reads JSON. Styling still loads the existing Tailwind CDN and Google Fonts, so full styling requires internet access.
+Double-click the root `index.html` or `site/index.html` for local viewing. The updater generates `menu-snapshot.js` alongside JSON for direct file access. Both local and hosted pages render the generated menu snapshot without runtime JSON requests. Styling still loads the existing Tailwind CDN and Google Fonts, so full styling requires internet access.
