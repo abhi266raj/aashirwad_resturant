@@ -53,6 +53,22 @@ class MenuSyncTests(unittest.TestCase):
             self.assertTrue((site / 'assets/used.jpg').exists())
             self.assertTrue((site / 'assets/placeholder.svg').exists())
 
+    def test_numeric_zero_priority_is_not_blank(self):
+        rows = [self.rows[0].copy(), self.rows[1].copy(), self.rows[2].copy()]
+        rows[0]['sort_priority'] = 0
+        rows[1]['sort_priority'] = 10
+        rows[2]['sort_priority'] = ''
+        self.assertEqual([item['sort_priority'] for item in normalize(rows)['items']], [0, 10, 10])
+
+    def test_snapshot_preserves_dish_text(self):
+        payload = {'items': [{'name': '<Paneer> & "Rice"', 'description': 'Fresh \u2028 food'}]}
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'menu.json'
+            update.write_menu_files(payload, output)
+            self.assertEqual(json.loads(output.read_text()), payload)
+            snapshot = output.with_name('menu-snapshot.js').read_text()
+            self.assertEqual(json.loads(snapshot.removeprefix('window.MENU_SNAPSHOT = ').strip().removesuffix(';')), payload)
+
     def test_seed_and_added_dish(self):
         added = dict.fromkeys(FIELDS, '')
         added.update(id='51', name='Masala Fries', category='Snacks', price='95', diet='Veg',
@@ -79,11 +95,11 @@ class MenuSyncTests(unittest.TestCase):
     def test_unsafe_image_rejected(self):
         row = self.rows[0].copy()
         row['image'] = 'javascript:alert(1)'
-        with self.assertRaisesRegex(ValueError, 'local_image'):
+        with self.assertRaisesRegex(ValueError, 'image'):
             normalize([row])
         row['image'] = ''
         row['image'] = '../menu.json'
-        with self.assertRaisesRegex(ValueError, 'local_image'):
+        with self.assertRaisesRegex(ValueError, 'image'):
             normalize([row])
 
 

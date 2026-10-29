@@ -2,12 +2,13 @@
 """Create or verify the private Menu tab, header, and dropdown options."""
 import argparse
 import csv
+import json
 import os
 import sys
 from pathlib import Path
 from urllib.parse import quote
 
-from update import FIELDS, authorized_session, spreadsheet_id, default_sheet_url, load_config
+from update import FIELDS, authorized_session, spreadsheet_id, default_sheet_url, load_config, save_config
 
 ROOT = Path(__file__).resolve().parents[1]
 API = 'https://sheets.googleapis.com/v4/spreadsheets'
@@ -31,13 +32,17 @@ def set_values(session, base, tab, cells, values):
     response = session.put(
         f'{base}/values/{sheet_range(tab, cells)}',
         params={'valueInputOption': 'RAW'},
-        json={'range': f"'{tab}'!{cells}", 'majorDimension': 'ROWS', 'values': values},
+        json={'majorDimension': 'ROWS', 'values': values},
         timeout=30,
     )
     checked(response)
 
 
-def create_schema(sheet_url, tab='Menu', seed=False, name='aashirwad_resturant â€” Menu', create_new=False):
+def create_schema(sheet_url=None, tab=None, seed=False, name=None, create_new=False):
+    config = load_config()
+    sheet_url = sheet_url if sheet_url is not None else config['sheet']['url']
+    tab = tab if tab is not None else config['sheet']['name']
+    name = name if name is not None else config['sheet']['spreadsheet_title']
     session = authorized_session(['https://www.googleapis.com/auth/spreadsheets'])
     if create_new or not sheet_url:
         created = checked(session.post(API, json={'properties': {'title': name}, 'sheets': [{'properties': {'title': tab}}]}, timeout=30))
@@ -55,11 +60,11 @@ def create_schema(sheet_url, tab='Menu', seed=False, name='aashirwad_resturant â
     header = existing_values(session, base, tab, 'A1:I1')
     if header and any(str(cell).strip() for cell in header[0]) and header[0] != FIELDS:
         raise ValueError('existing header differs from the menu schema; no cells were overwritten')
-    if not header or not header[0]:
+    if not header or not any(str(cell).strip() for cell in header[0]):
         set_values(session, base, tab, 'A1:I1', [FIELDS])
     requests = [
         {'updateSheetProperties': {'properties': {'sheetId': tab_id, 'gridProperties': {'frozenRowCount': 1}}, 'fields': 'gridProperties.frozenRowCount'}},
-        {'repeatCell': {'range': {'sheetId': tab_id, 'startRowIndex': 0, 'endRowIndex': 1}, 'cell': {'userEnteredFormat': {'backgroundColor': {'red': 0.48, 'green': 0.18, 'blue': 0.13}, 'textFormat': {'foregroundColor': {'red': 1, 'green': 1, 'blue': 1}, 'bold': True}}}, 'fields': 'userEnteredFormat'}},
+        {'repeatCell': {'range': {'sheetId': tab_id, 'startRowIndex': 0, 'endRowIndex': 1}, 'cell': {'userEnteredFormat': {'backgroundColor': {'red': 0.02, 'green': 0.31, 'blue': 0.23}, 'textFormat': {'foregroundColor': {'red': 1, 'green': 1, 'blue': 1}, 'bold': True}}}, 'fields': 'userEnteredFormat'}},
     ]
     for column, values in ((2, load_config()['sheet']['categories']), (4, ['Veg', 'Non-Veg']), (6, ['Yes', 'No'])):
         requests.append({'setDataValidation': {'range': {'sheetId': tab_id, 'startRowIndex': 1, 'startColumnIndex': column, 'endColumnIndex': column + 1}, 'rule': {'condition': {'type': 'ONE_OF_LIST', 'values': [{'userEnteredValue': value} for value in values]}, 'strict': True, 'showCustomUi': True}}})
@@ -80,28 +85,26 @@ def create_schema(sheet_url, tab='Menu', seed=False, name='aashirwad_resturant â
             raise ValueError('sheet already contains dishes; --seed did not overwrite them')
         with (ROOT / 'data/menu-template.csv').open(newline='', encoding='utf-8-sig') as handle:
             rows = list(csv.DictReader(handle))
-        values = [[row.get(field, '') for field in FIELDS] for row in rows]
+        values = [[int(row[field]) if field in ('id', 'price', 'sort_priority') and row.get(field, '') else row.get(field, '') for field in FIELDS] for row in rows]
         if values:
             set_values(session, base, tab, f'A2:I{len(values) + 1}', values)
-    if create_new:
-        config = load_config()
-        config['sheet'].update(url=sheet_url, name=name, menu_tab=tab)
-        (Path(__file__).with_name('config.json')).write_text(__import__('json').dumps(config, indent=2, ensure_ascii=False) + '\n')
+    config['sheet'].update(url=sheet_url, name=tab, spreadsheet_title=name)
+    save_config(config)
     print(f'Menu schema ready: {len(FIELDS)} columns, Veg/Non-Veg and Yes/No dropdowns')
 
 
 def main():
-    from setup import ensure_runtime
-    ensure_runtime()
     config = load_config()
     parser = argparse.ArgumentParser()
-    parser.add_argument('--sheet-url', default=default_sheet_url(), help='Google Sheet URL or ID; defaults to MENU_SHEET_URL')
-    parser.add_argument('--tab', default=os.environ.get('MENU_SHEET_TAB', config['sheet']['menu_tab']))
+    parser.add_argument('--sheet-url', default=default_sheet_url(), help='Google Sheet URL or ID; defaults to scripts/config.json')
+    parser.add_argument('--sheet-name', '--tab', '--name', dest='tab', default=config['sheet']['name'], help='tab to configure or create')
     parser.add_argument('--seed', action='store_true', help='add the 50 starter dishes only if the Menu tab is empty')
-    parser.add_argument('--name', default=config['sheet']['name'], help='title for a newly created spreadsheet')
+    parser.add_argument('--spreadsheet-title', default=config['sheet']['spreadsheet_title'], help='workbook title when creating a new spreadsheet')
     parser.add_argument('--new', action='store_true', help='create a new spreadsheet instead of using the default link')
     args = parser.parse_args()
-    create_schema(args.sheet_url, args.tab, args.seed, args.name, args.new)
+    from setup import ensure_runtime
+    ensure_runtime()
+    create_schema(args.sheet_url, args.tab, args.seed, args.spreadsheet_title, args.new)
 
 
 if __name__ == '__main__':

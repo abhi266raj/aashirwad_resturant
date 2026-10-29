@@ -1,8 +1,7 @@
 {
   "sheet": {
     "url": "https://docs.google.com/spreadsheets/d/1bQyKNGmJwIZf4rUSHgDXJNtpXkvbUaNmiN4i5izOePA/edit",
-    "name": "aashirwad_resturant — Menu",
-    "menu_tab": "Menu",
+    "name": "Menu2",
     "categories": [
       "Roti & Naan",
       "Veg Main Course",
@@ -12,6 +11,7 @@
       "Chowmein & Fast Food",
       "Starters & Chilli",
       "Drinks & Desserts"
-    ]
+    ],
+    "spreadsheet_title": "aashirwad_resturant — Menu"
   }
 }

@@ -17,14 +17,18 @@ CONFIG_PATH = Path(__file__).with_name('config.json')
 def load_config(path=CONFIG_PATH):
     return json.loads(Path(path).read_text(encoding='utf-8'))
 
+def save_config(config):
+    CONFIG_PATH.write_text(json.dumps(config, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
 def default_sheet_url():
-    return os.environ.get('MENU_SHEET_URL') or load_config()['sheet']['url']
+    return load_config()['sheet']['url']
 
 
 def spreadsheet_id(value):
     value = (value or '').strip()
     if not value:
-        raise ValueError('provide --sheet-url or set MENU_SHEET_URL')
+        raise ValueError('set sheet.url in scripts/config.json or provide --sheet-url')
     if value.startswith('https://'):
         parsed = urlparse(value)
         if parsed.netloc != 'docs.google.com':
@@ -63,6 +67,10 @@ TRUTHY = {'yes', 'true', '1'}
 FALSEY = {'no', 'false', '0'}
 
 
+def cell_text(value):
+    return '' if value is None else str(value).strip()
+
+
 def boolean(value, field, row, default=False):
     value = str(value or '').strip().lower()
     if not value:
@@ -79,9 +87,11 @@ def safe_local_path(value, row):
     if not value:
         return ''
     if not value.startswith('assets/') or '..' in Path(value).parts or '\\' in value or '"' in value or "'" in value:
-        raise ValueError(f'row {row}: local_image must be a path under assets/')
+        raise ValueError(f'row {row}: image must be a path under assets/')
+    if not (SITE / value).resolve().is_relative_to(SITE.resolve()):
+        raise ValueError(f'row {row}: image path escapes the site directory')
     if not (SITE / value).is_file():
-        raise ValueError(f'row {row}: local_image does not exist: {value}')
+        raise ValueError(f'row {row}: image does not exist: {value}')
     return value
 
 
@@ -99,7 +109,7 @@ def fallback_image(name, diet, local_image):
 
 def normalize(rows):
     items = []
-    priorities = [int(str(row.get('sort_priority') or '').strip()) for row in rows if re.fullmatch(r'[0-9]+', str(row.get('sort_priority') or '').strip())]
+    priorities = [int(cell_text(row.get('sort_priority'))) for row in rows if re.fullmatch(r'[0-9]+', cell_text(row.get('sort_priority')))]
     default_priority = max(priorities, default=0)
     for row_number, row in enumerate(rows, 2):
         if not any(str(v or '').strip() for v in row.values()):
@@ -124,7 +134,7 @@ def normalize(rows):
                 raise ValueError(f'row {row_number}: image must be a public HTTP(S) image URL')
         local_image = safe_local_path(image_value if not url else '', row_number)
         popular = boolean(row.get('popular'), 'popular', row_number)
-        sort_text = str(row.get('sort_priority') or '').strip()
+        sort_text = cell_text(row.get('sort_priority'))
         if sort_text and not re.fullmatch(r'[0-9]+', sort_text):
             raise ValueError(f'row {row_number}: sort_priority must be a whole number')
         priority = int(sort_text) if sort_text else default_priority
@@ -149,11 +159,15 @@ def sheet_rows(sheet_url, tab):
            + urllib.parse.quote(sheet_id, safe='') + '/values/'
            + urllib.parse.quote(range_name, safe='') + '?valueRenderOption=UNFORMATTED_VALUE')
     response = session.get(url, timeout=30)
+    if response.status_code == 400:
+        raise ValueError(f'Sheet tab {tab!r} was not found or could not be read; run create_schema.py locally to create/configure it')
     response.raise_for_status()
     values = response.json().get('values', [])
     if not values:
         raise ValueError('sheet is empty')
     headers = [str(v).strip() for v in values[0]]
+    if len(headers) != len(set(headers)):
+        raise ValueError('sheet header contains duplicate column names')
     missing = set(FIELDS) - set(headers)
     if missing:
         raise ValueError('sheet is missing columns: ' + ', '.join(sorted(missing)))
@@ -191,13 +205,11 @@ def download_image(url, target, max_width=900, max_height=900, quality=78):
 
 
 def localize_images(payload, max_width=900, max_height=900, quality=78):
-    active = set()
     for item in payload['items']:
         if item['image_url']:
             image_key = hashlib.sha256((item["name"] + item["image_url"]).encode()).hexdigest()[:24]
             path = f"assets/sheet/{image_key}.jpg"
             download_image(item['image_url'], SITE / path, max_width, max_height, quality)
-            active.add(image_key)
             item['image'] = path
         else:
             item['image'] = item['fallback_image']
@@ -248,12 +260,24 @@ def clear_unused_assets(dry_run=False):
     return removed
 
 
+def write_menu_files(payload, output):
+    output.parent.mkdir(parents=True, exist_ok=True)
+    files = {
+        output: json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + '\n',
+        output.with_name('menu-snapshot.js'): 'window.MENU_SNAPSHOT = ' + json.dumps(payload, ensure_ascii=True) + ';\n',
+    }
+    for path, content in files.items():
+        temporary = path.with_suffix(path.suffix + '.tmp')
+        temporary.write_text(content, encoding='utf-8')
+        temporary.replace(path)
+
+
 def main():
     config = load_config()
     parser = argparse.ArgumentParser()
     parser.add_argument('--csv', type=Path, help='local CSV for preview or verification')
-    parser.add_argument('--sheet-url', default=default_sheet_url(), help='Google Sheet URL or ID; defaults to MENU_SHEET_URL')
-    parser.add_argument('--tab', default=os.environ.get('MENU_SHEET_TAB', config['sheet']['menu_tab']), help='sheet tab name (default: Menu)')
+    parser.add_argument('--sheet-url', default=default_sheet_url(), help='Google Sheet URL or ID; defaults to scripts/config.json')
+    parser.add_argument('--sheet-name', '--tab', '--name', dest='tab', default=config['sheet']['name'], help='sheet tab name; defaults to sheet.name in config.json')
     parser.add_argument('--output', type=Path, default=SITE / 'menu.json')
     parser.add_argument('--clear-unused-assets', action='store_true', help='manually remove unused local image assets without reading Google Sheets')
     parser.add_argument('--dry-run', action='store_true', help='preview asset cleanup without deleting files')
@@ -272,10 +296,7 @@ def main():
     else:
         rows = sheet_rows(args.sheet_url, args.tab)
     payload = localize_images(normalize(rows), MENU_IMAGE_MAX_WIDTH, MENU_IMAGE_MAX_HEIGHT, MENU_IMAGE_QUALITY)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
-    snapshot = args.output.with_name('menu-snapshot.js')
-    snapshot.write_text('window.MENU_SNAPSHOT = ' + json.dumps(payload, ensure_ascii=True).replace('<', '\\u003c') + ';\n', encoding='utf-8')
+    write_menu_files(payload, args.output)
     print(f'Validated {len(payload["items"])} dishes and wrote {args.output}')
 
 
