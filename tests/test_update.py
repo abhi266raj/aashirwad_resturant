@@ -154,6 +154,29 @@ class MenuSyncTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'Local authentication not configured'):
                 update.authorized_session(['https://www.googleapis.com/auth/spreadsheets.readonly'])
 
+    def test_download_sheet_csv_fails_explicitly_on_error(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str) / 'temp_sub'
+            mock_session = unittest.mock.Mock()
+            export_fail = unittest.mock.Mock(status_code=403, text='Forbidden')
+            api_fail = unittest.mock.Mock(status_code=403)
+            import requests
+            api_fail.raise_for_status.side_effect = requests.exceptions.HTTPError('403 Forbidden')
+            mock_session.get.side_effect = [export_fail, export_fail, api_fail]
+
+            with self.assertRaises(requests.exceptions.HTTPError):
+                update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=mock_session, temp_dir=temp_dir)
+            # Ensure no corrupted CSV was left
+            self.assertFalse(any(temp_dir.glob('*.csv')))
+
+    def test_download_sheet_csv_fails_when_unauthenticated_and_private(self):
+        with tempfile.TemporaryDirectory() as temp_dir_str:
+            temp_dir = Path(temp_dir_str) / 'temp_sub'
+            with unittest.mock.patch('requests.Session.get') as mock_get:
+                mock_get.return_value = unittest.mock.Mock(status_code=403, text='Forbidden')
+                with self.assertRaisesRegex(RuntimeError, 'local credentials are not configured'):
+                    update.download_sheet_csv('https://docs.google.com/spreadsheets/d/test-id/edit', 'Menu2', session=None, temp_dir=temp_dir)
+
 
 if __name__ == '__main__':
     unittest.main()
